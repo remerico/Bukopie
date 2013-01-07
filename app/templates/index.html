@@ -5,37 +5,58 @@
     <script src="static/jquery.min.js"></script>
     <script>
         $(document).ready(function(){
-            if ("WebSocket" in window) {
-                ws = new WebSocket("ws://" + document.domain + ":{{config.port}}/websocket");
-                ws.onmessage = function (msg) {
-                    var message = JSON.parse(msg.data);
-                    $("p#log").html(message.output);
-                };
-            };
 
-            // Bind send button to websocket
-            $("button#send").live("click", function() {
-                ws.send(JSON.stringify({'output': 'Sent from my browser!'}));
+            $.ajaxSetup({ cache: false });
+
+            $("button#play").click(function() {
+                sendAction('play', {}) 
             });
 
-            // Cleanly close websocket when unload window
-            window.onbeforeunload = function() {
-                ws.onclose = function () {}; // disable onclose handler first
-                ws.close()
-            };
+            $("button#stop").click(function() {
+                sendAction('stop', {}) 
+            });
 
+            $("button#volup").click(function() {
+                sendAction('volumeUp', {}) 
+            });
+
+            $("button#voldown").click(function() {
+                sendAction('volumeDown', {}) 
+            });
 
         });
+
+        function sendAction(action, param) {
+
+            $('input#message').val(JSON.stringify({
+                'action' : action,
+                'param' : param
+            }));
+            
+            $.ajax({
+                type: 'POST',
+                url: '/action',
+                data: 'message=' + $('input#message').val(),
+                //success: function(data) { }
+            });
+        }
+
     </script>
 </head>
 
 <body>
 
-    <a href="#" onclick="alert('nya')">something</a>
+    <form id="action">
+        <input id="message" type="hidden" />
+    </form>
 
-    <p>port: {{config.port}}</p>
     <p id="log"></p>
-    <button id="send" type="button">Send!</button>
+    <button id="play" type="button">Play!</button>
+    <button id="stop" type="button">Stop!</button>
+    <button id="volup" type="button">+</button>
+    <button id="voldown" type="button">-</button>
+
+    <a href="#" onclick="sendAction('play', {})">play</a>
 
 </body>
 </html>
