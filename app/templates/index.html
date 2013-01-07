@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <script src="static/jquery.min.js"></script>
+    <script>
+        $(document).ready(function(){
+            if ("WebSocket" in window) {
+                ws = new WebSocket("ws://" + document.domain + ":{{config.port}}/websocket");
+                ws.onmessage = function (msg) {
+                    var message = JSON.parse(msg.data);
+                    $("p#log").html(message.output);
+                };
+            };
+
+            // Bind send button to websocket
+            $("button#send").live("click", function() {
+                ws.send(JSON.stringify({'output': 'Sent from my browser!'}));
+            });
+
+            // Cleanly close websocket when unload window
+            window.onbeforeunload = function() {
+                ws.onclose = function () {}; // disable onclose handler first
+                ws.close()
+            };
+
+
+        });
+    </script>
+</head>
+
+<body>
+
+    <a href="#" onclick="alert('nya')">something</a>
+
+    <p>port: {{config.port}}</p>
+    <p id="log"></p>
+    <button id="send" type="button">Send!</button>
+
+</body>
+</html>
