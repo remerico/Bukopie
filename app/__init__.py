@@ -6,44 +6,36 @@ import tornado.web
 
 from config import Config
 from stations import Stations
-from actions import ActionHandler
+import handlers as h
 
-
-config = Config()
-stations = Stations(config.stationfile)
 
 class Application(tornado.web.Application):
     def __init__(self):
-        handlers = [
-            (r"/", MainHandler),
-            (r"/action", ActionHandler),
-            (r"/get/status", StatusHandler),
-            (r"/get/stations", StationsHandler),
-        ]
-        settings = dict(
-            template_path=os.path.join(os.path.dirname(__file__), "templates"),
-            static_path=os.path.join(os.path.dirname(__file__), "static")
-        )
-        tornado.web.Application.__init__(self, handlers, **settings)
 
+		self.config = Config()
+		self.stations = Stations(self.config.stationfile)
+		self.isplaying = False;
+		self.playid = -1;
 
-class MainHandler(tornado.web.RequestHandler):
-	def get(self):	
-		self.render("index.html", config=config)
+		handlers = [
+			(r"/", h.MainHandler),
+			(r"/nowplaying", h.NowPlayingHandler),
+			(r"/action", h.ActionHandler),
+			(r"/get/status", h.GetStatusHandler),
+			(r"/get/playing", h.GetPlayingHandler),
+			(r"/get/stations", h.StationsHandler),
+			(r"/favicon.ico", tornado.web.StaticFileHandler, {'path': 'favicon.ico'}),
+		]
+		settings = dict(
+			template_path=os.path.join(os.path.dirname(__file__), "templates"),
+			static_path=os.path.join(os.path.dirname(__file__), "static")
+		)
 
-
-class StatusHandler(tornado.web.RequestHandler):
-	@tornado.web.asynchronous
-	def post(self):
-		pass
-
-class StationsHandler(tornado.web.RequestHandler):
-	def get(self):
-		self.write(stations.json_list())
-
+		tornado.web.Application.__init__(self, handlers, **settings)
+		
 
 def run():
 	print('Bukopie running')
 	app = Application()
-	app.listen(config.port)
+	app.listen(app.config.port)
 	tornado.ioloop.IOLoop.instance().start()

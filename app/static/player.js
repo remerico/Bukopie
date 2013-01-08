@@ -1,21 +1,4 @@
-$(document).ready(function(){
-
-    $("#play").click(function() {
-        sendAction('play', {some:1}) 
-    });
-
-    $("#stop").click(function() {
-        sendAction('stop', {}) 
-    });
-
-    $("#volup").click(function() {
-        sendAction('volumeUp', {}) 
-    });
-
-    $("#voldown").click(function() {
-        sendAction('volumeDown', {}) 
-    });
-
+$('#page-index').live('pagebeforeshow', function (event) {
 
     // Get station list
     $.getJSON('get/stations', function(data) {
@@ -33,6 +16,18 @@ $(document).ready(function(){
 });
 
 
+$('#page-playing').live('pagebeforeshow', function (event) {
+
+    $("#stop").click(function() {
+        stopStation();
+    });
+
+    $.getJSON('get/playing', function(data) {
+        $('#playingstation').html(data.stream);
+    });
+
+});
+
 function sendAction(action, param) {
 
     param.action = action;
@@ -48,4 +43,10 @@ function sendAction(action, param) {
 
 function playStation(id) {
     sendAction('play', { 'id' : id });
+    $.mobile.changePage( "/nowplaying", { transition: "slide"} );
+}
+
+function stopStation() {
+    sendAction('stop', {});
+    //$.mobile.changePage( "/", { transition: "slide"} );
 }

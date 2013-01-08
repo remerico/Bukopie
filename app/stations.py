@@ -8,14 +8,6 @@ class Stations:
 		self.file = path.join(path.dirname(__file__), file)
 		self.list = Stations.read(self.file)
 
-	def json_list(self):
-		list = []
-		i = 0
-		for s in self.list:
-			list.append({ 'id' : i, 'name' : s[0] })
-			i += 1
-		return json.dumps(list)
-
 	@staticmethod
 	def read(file):
 
