@@ -1,22 +1,11 @@
-import json
+import tornado.web
 
-def handle_action(message):
+class ActionHandler(tornado.web.RequestHandler):
+	def post(self):
+		action = self.get_argument("action", None)
 
-	message = json.loads(message)
-
-	if 'action' in message and 'param' in message:
-
-		action = message['action']
-		param  = message['param']
-
-		if   action == 'play':
-			print('play!')
-		
-		elif action == 'stop':
-			print('stop!')
-			
-		elif action == 'volumeUp':
-			print('vol up!')
-
-		elif action == 'volumeDown':
-			print('vol down!')
+		if action:
+			if action == 'play':
+				print('play!')
+			elif action == 'stop':
+				print('stop!')
