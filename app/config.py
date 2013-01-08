@@ -5,5 +5,5 @@ import json
 class Config:
 
 	def __init__(self):
-		self.port = 5001
+		self.port = 8081
 		self.stationfile = 'data/stations.csv'

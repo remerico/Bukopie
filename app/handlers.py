@@ -1,6 +1,11 @@
 import tornado.web
 import json
 
+from player import Player
+
+playerEnabled = True
+player = Player()
+
 class MainHandler(tornado.web.RequestHandler):
 	def get(self):	
 		self.render("index.html", config=self.application.config)
@@ -48,6 +53,7 @@ class StationsHandler(tornado.web.RequestHandler):
 
 
 class ActionHandler(tornado.web.RequestHandler):
+
 	def post(self):
 		action = self.get_argument("action", None)
 
@@ -56,6 +62,7 @@ class ActionHandler(tornado.web.RequestHandler):
 				id = self.get_argument("id", None)
 				if id and int(id) != self.application.playid:
 					print('play! ' + str(id))
+					if playerEnabled: player.play(self.application.stations.list[int(id)][1])
 					self.application.isplaying = True;
 					self.application.playid = int(id);
 
@@ -63,3 +70,12 @@ class ActionHandler(tornado.web.RequestHandler):
 				print('stop!')
 				self.application.isplaying = False;
 				self.application.playid = -1;
+				if playerEnabled: player.close()
+
+			elif action == 'volumeUp':
+				print('vol up')
+				if playerEnabled: player.volumeUp()
+
+			elif action == 'volumeDown':
+				print('vol down')
+				if playerEnabled: player.volumeDown()
