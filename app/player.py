@@ -185,6 +185,7 @@ class Player(object):
             os.kill(self.process.pid, 15)
             self.process.wait()
         self.process = None
+        self.log.reset_status()
 
     def volumeUp(self):
         """ increase mplayer's volume """
