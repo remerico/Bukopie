@@ -177,6 +177,13 @@
                 .on('statuschanged', refreshStatus);
 
 
+            $('#volume').on('change', function(event){
+                app.sendMessage('setVolume', { 'percent' : $(this).attr('value') });
+            });
+
+            $('#pause').on('click', function(event){
+                app.sendMessage("pause", {});
+            });            
 
             $("#stop").click(function() {
                 app.stopStation();
@@ -193,6 +200,8 @@
 
             refreshPlaying();
             refreshStatus();
+
+            //$('#volume').slider({ disabled: "true" });
 
         });
 

@@ -13,13 +13,22 @@
 		<h3 id="station"></h3>
 		<h3 id="status"></h3>
 
-		<a id="stop" data-direction="reverse" href="/" data-role="button" data-transition="slide">Stop</a>
 
+		<div style="text-align: center; width: 100%">
+			<div data-role="controlgroup" data-type="horizontal" style="width: 100%">
+				<a id="pause" href="#" data-role="button" data-transition="slide">Pause</a>
+				<a id="stop" data-direction="reverse" href="/" data-role="button" data-transition="slide">Stop</a>
+			</div>
 
-		<div data-role="controlgroup">
-			<a id="volumeUp" href="#" data-role="button">Volume Up</a>
-			<a id="volumeDown" href="#" data-role="button">Volume Down</a>
+			<input type="range" style="display:none; width: 100%" name="volume" id="volume" value="60" min="0" max="100" data-highlight="true"/>
 		</div>
+
+		<!-- <div data-role="controlgroup" data-type="horizontal">
+			<a id="volumeDown" href="#" data-role="button">Volume Down</a>
+			<a id="volumeUp" href="#" data-role="button">Volume Up</a>
+		</div> -->
+
+
 	</div>
 
 </div>

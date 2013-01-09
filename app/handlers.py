@@ -28,10 +28,8 @@ class GetStatusHandler(tornado.web.RequestHandler):
 		arg_ts = int(self.get_argument('timestamp', 0))
 
 		if arg_ts != status['timestamp']:
-			print('initial')
 			self.finish(json.dumps(status))
 		else:
-			print('next')
 			player.log.add_callback(self.new_update)
 
 	def new_update(self, message):
@@ -40,8 +38,8 @@ class GetStatusHandler(tornado.web.RequestHandler):
 		self.finish(json.dumps(message))
 
 	def on_connection_close(self):
+		player = self.application.player
 		player.log.remove_callback(self.new_update)
-		#print('connection closed!')
 
 
 class GetPlayingHandler(tornado.web.RequestHandler):
@@ -77,21 +75,28 @@ class ActionHandler(tornado.web.RequestHandler):
 			if action == 'play':
 				id = self.get_argument("id", None)
 				if id and int(id) != self.application.playid:
-					print('play! ' + str(id))
 					if playerEnabled: player.play(self.application.stations.list[int(id)][1])
 					self.application.isplaying = True;
 					self.application.playid = int(id);
 
 			elif action == 'stop':
-				print('stop!')
 				self.application.isplaying = False;
 				self.application.playid = -1;
 				if playerEnabled: player.close()
 
+			elif action == 'setVolume':
+				percent = self.get_argument("percent", None)
+				if percent:
+					percent = max(0, min(100, int(percent)))
+					if playerEnabled: player.setVolume(percent)
+
+			elif action == 'pause':
+				if playerEnabled: player.pause()
+
 			elif action == 'volumeUp':
-				print('vol up')
 				if playerEnabled: player.volumeUp()
 
 			elif action == 'volumeDown':
-				print('vol down')
 				if playerEnabled: player.volumeDown()
+
+

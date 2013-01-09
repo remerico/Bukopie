@@ -30,6 +30,7 @@ import re
         ICY Info: StreamTitle='Baby Mammoth - Lost Bearings';StreamUrl='';
 
 
+        ICY Info: StreamTitle=\'(.*?)\';
  '''
 
 class PlayerLog:
@@ -77,11 +78,13 @@ class PlayerLog:
             if r: self.update_status('bitrate', r.group(1))
 
         if not r:
-            r = re.search("ICY Info:\s*StreamTitle=\'(.*)\';StreamUrl=\'(.*)\';", line)
+            r = re.search('Website\s*:\s*(.+)', line)
+            if r: self.update_status('url', r.group(1))
+
+        if not r:
+            r = re.search("ICY Info: StreamTitle=\'(.*?)\';", line)
             if r:
                 self.update_status('stream', r.group(1));
-                if r.group(2) != '':
-                    self.update_status('url', r.group(2));
 
         if not r:
             if line.startswith('Starting playback...'):
@@ -94,6 +97,7 @@ class PlayerLog:
         self.status_lock.acquire()
         self.status[key] = value
         self.status['timestamp'] = int(time.time())
+        print('status updated!')
         self.status_lock.release()
 
     def reset_status(self):
@@ -155,6 +159,7 @@ class Player(object):
         self.close()
 
         opts = ["mplayer", "-quiet", 
+            "-slave",
             "-cache", str(self.config.cache),
             "-cache-min", str(self.config.cachemin)]
 
@@ -173,21 +178,21 @@ class Player(object):
         """ send keystroke command to mplayer """
         if(self.process is not None):
             try:
-                self.process.stdin.write(command)
+                self.process.stdin.write(command + '\n')
             except:
                 pass
 
     def mute(self):
         """ mute mplayer """
-        self.sendCommand("m")
+        self.sendCommand("mute")
 
     def pause(self):
         """ pause streaming (if possible) """
-        self.sendCommand("p")
+        self.sendCommand("pause")
 
     def close(self):
         """ exit pyradio (and kill mplayer instance) """
-        self.sendCommand("q")
+        self.sendCommand("quit")
         if self.process is not None:
             os.kill(self.process.pid, 15)
             self.process.wait()
@@ -196,8 +201,11 @@ class Player(object):
 
     def volumeUp(self):
         """ increase mplayer's volume """
-        self.sendCommand("*")
+        self.sendCommand("volume 1")
 
     def volumeDown(self):
         """ decrease mplayer's volume """
-        self.sendCommand("/")
+        self.sendCommand("volume 0")
+
+    def setVolume(self, percent):
+        self.sendCommand("volume " + str(percent) + " 1")
