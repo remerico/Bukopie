@@ -3,7 +3,7 @@ import json
 
 from player import Player
 
-playerEnabled = True
+playerEnabled = False
 player = Player()
 
 class MainHandler(tornado.web.RequestHandler):
@@ -22,19 +22,15 @@ class NowPlayingHandler(tornado.web.RequestHandler):
 
 class GetStatusHandler(tornado.web.RequestHandler):
 	@tornado.web.asynchronous
-	def post(self):
-		pass
+	def get(self):
+		self.finish("{chenez : 1}")
 
 
 class GetPlayingHandler(tornado.web.RequestHandler):
 	def get(self):
 		playing = {}
-		if self.application.playid >= 0:
-			playing['stream'] = self.application.stations.list[self.application.playid][0]
-			playing['playing'] = True
-		else:
-			playing['stream'] = ''
-			playing['playing'] = False
+		playing['id'] = self.application.playid
+		playing['stream'] = self.application.stations.list[self.application.playid][0] if self.application.playid >= 0 else ''
 		self.write(json.dumps(playing))
 
 
@@ -47,7 +43,8 @@ class StationsHandler(tornado.web.RequestHandler):
 			list.append({ 'id' : i, 'name' : s[0] })
 			i += 1
 
-		list[self.application.playid]['playing'] = True
+		if self.application.playid >= 0:
+			list[self.application.playid]['playing'] = True
 
 		self.write(json.dumps(list))
 
