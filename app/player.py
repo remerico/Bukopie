@@ -129,8 +129,9 @@ class Player(object):
     """ Media player class. Playing is handled by mplayer """
     process = None
     
-    def __init__(self):
+    def __init__(self, config):
         self.log = PlayerLog()
+        self.config = config
 
     def __del__(self):
         self.close()
@@ -152,10 +153,16 @@ class Player(object):
         """ use mplayer to play a stream """
         print("Ready to play " + stream_url)
         self.close()
+
+        opts = ["mplayer", "-quiet", 
+            "-cache", str(self.config.cache),
+            "-cache-min", str(self.config.cachemin)]
+
         if stream_url.split("?")[0][-3:] in ['m3u', 'pls']:
-            opts = ["mplayer", "-quiet", "-playlist", stream_url]
+            opts.extend(["-playlist", stream_url])
         else:
-            opts = ["mplayer", "-quiet", stream_url]
+            opts.extend([stream_url])
+
         self.process = subprocess.Popen(opts, shell=False,
                                         stdout=subprocess.PIPE,
                                         stdin=subprocess.PIPE,

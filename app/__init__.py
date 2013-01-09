@@ -6,6 +6,7 @@ import tornado.web
 
 from config import Config
 from stations import Stations
+from player import Player
 import handlers as h
 
 
@@ -13,6 +14,7 @@ class Application(tornado.web.Application):
     def __init__(self):
 
 		self.config = Config()
+		self.player = Player(self.config)
 		self.stations = Stations(self.config.stationfile)
 		self.isplaying = False;
 		self.playid = -1;

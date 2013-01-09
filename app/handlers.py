@@ -2,10 +2,7 @@ import tornado.web
 import tornado.ioloop
 import json
 
-from player import Player
-
 playerEnabled = True
-player = Player()
 
 class MainHandler(tornado.web.RequestHandler):
 	def get(self):	
@@ -25,6 +22,7 @@ class GetStatusHandler(tornado.web.RequestHandler):
 
 	@tornado.web.asynchronous
 	def post(self):
+		player = self.application.player
 
 		status = player.log.get_status()
 		arg_ts = int(self.get_argument('timestamp', 0))
@@ -72,6 +70,7 @@ class StationsHandler(tornado.web.RequestHandler):
 class ActionHandler(tornado.web.RequestHandler):
 
 	def post(self):
+		player = self.application.player
 		action = self.get_argument("action", None)
 
 		if action:
