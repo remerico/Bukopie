@@ -1,9 +1,10 @@
 import tornado.web
+import tornado.ioloop
 import json
 
 from player import Player
 
-playerEnabled = False
+playerEnabled = True
 player = Player()
 
 class MainHandler(tornado.web.RequestHandler):
@@ -21,9 +22,28 @@ class NowPlayingHandler(tornado.web.RequestHandler):
 
 
 class GetStatusHandler(tornado.web.RequestHandler):
+
 	@tornado.web.asynchronous
-	def get(self):
-		self.finish("{chenez : 1}")
+	def post(self):
+
+		status = player.log.get_status()
+		arg_ts = int(self.get_argument('timestamp', 0))
+
+		if arg_ts != status['timestamp']:
+			print('initial')
+			self.finish(json.dumps(status))
+		else:
+			print('next')
+			player.log.add_callback(self.new_update)
+
+	def new_update(self, message):
+		if self.request.connection.stream.closed(): 
+			return
+		self.finish(json.dumps(message))
+
+	def on_connection_close(self):
+		player.log.remove_callback(self.new_update)
+		#print('connection closed!')
 
 
 class GetPlayingHandler(tornado.web.RequestHandler):

@@ -14,6 +14,9 @@
 
         loaded : false,
         stations : null,
+        status : {
+            timestamp : 0
+        },
         playing : { id: -1, stream: '' },
 
 
@@ -33,7 +36,30 @@
             })
         },
 
+        fetchStatus : function(latest) {
 
+            $.ajax({
+                type: 'POST',
+                url: 'get/status',
+                data: 'timestamp=' + app.status.timestamp,
+                success: function(data) {
+
+                    //alert(data)
+                    data = $.parseJSON(data);
+
+                    if (data) {
+                        app.status = data;
+
+                        $.event.trigger('statuschanged', data);
+                        window.setTimeout(app.fetchStatus, 10, true);
+                    }
+                    else {
+                        alert('not??')
+                    }
+                }
+            });
+
+        },
 
         sendMessage : function(action, param) {
 
@@ -51,13 +77,12 @@
 
             if (app.playing.id != id) {
                 $.event.trigger('streamstop', app.playing.id);
+
                 app.sendMessage('play', { 'id' : id });
                 app.fetchPlaying();
 
                 $.event.trigger('streamplay', id);
             }
-
-            $.mobile.changePage( "/nowplaying", { transition: "slide"} );
         },
 
         stopStation : function() {
@@ -77,6 +102,7 @@
             if (!app.loaded) {
                 app.fetchPlaying();
                 app.fetchStations();
+                app.fetchStatus(false);
                 app.loaded = true;
             }
         })
@@ -123,6 +149,7 @@
 
             stationlist.on('click', 'li', function() {
                 app.playStation($(this).attr('id'));
+                $.mobile.changePage( "/nowplaying", { transition: "slide"} );
             });
 
 
@@ -134,10 +161,21 @@
         .on('pageinit', '#page-playing', function(event) {
 
             var refreshPlaying = function() {
-                $('#playingstation').html(app.playing.stream);
+                $('#station').html(app.playing.stream);
             }
 
-            $(this).on('playingchanged', refreshPlaying);
+            var refreshStatus = function() {
+                if (app.status.station != '') {
+                    $('#station').html(app.status.station);
+                }
+                $('#status').html(app.status.connection);
+                $('#stream').html(app.status.stream);
+            }
+
+            $(this)
+                .on('playingchanged', refreshPlaying)
+                .on('statuschanged', refreshStatus);
+
 
 
             $("#stop").click(function() {
@@ -154,15 +192,7 @@
 
 
             refreshPlaying();
-
-        })
-
-        .on('pagebeforeshow', '#page-playing', function (event) {
-
-            $.getJSON('get/status', function(data) {
-                alert(JSON.stringify(data));
-            });
-            
+            refreshStatus();
 
         });
 
