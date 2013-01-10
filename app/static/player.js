@@ -1,98 +1,106 @@
 (function() {
 
-    var THEME_CLASSES = 'ui-btn-up-a ui-btn-up-b ui-btn-up-c ui-btn-up-d ui-btn-up-e ui-btn-hover-a ui-btn-hover-b ui-btn-hover-c ui-btn-hover-d ui-btn-hover-e';
 
-    function updateTheme(s, t) {
-        s.removeClass(THEME_CLASSES)
-            .attr('data-theme', t)
-            .addClass('ui-btn-up-' + t);
+    var Util = {
+        
+        THEME_CLASSES : 'ui-btn-up-a ui-btn-up-b ui-btn-up-c ui-btn-up-d ui-btn-up-e ui-btn-hover-a ui-btn-hover-b ui-btn-hover-c ui-btn-hover-d ui-btn-hover-e',
+
+        updateTheme : function(s, t) {
+            s.removeClass(this.THEME_CLASSES)
+                .attr('data-theme', t)
+                .addClass('ui-btn-up-' + t);
+        }
+
     }
 
 
-    // Applicate state and functions
-    var app = {
+    // Application state and functions
+    var App = (function() {
 
-        loaded : false,
-        stations : null,
-        status : {
-            timestamp : 0
-        },
-        playing : { id: -1, stream: '' },
+        function App() {
+            this.loaded   = false;
+            this.stations = null;
+            this.status   = { timestamp : 0 };
+            this.playing  = { id: -1, stream: '' };
 
-
-        fetchStations : function() {
-            $.getJSON('get/stations', function(data) {
-                var trigger = (JSON.stringify(app.stations) != JSON.stringify(data));
-                app.stations = data;
-                if (trigger) $.event.trigger('stationschanged', data);
-            });
-        },
-
-        fetchPlaying : function() {
-            $.getJSON('get/playing', function(data) {
-                var trigger = (app.playing.id != data.id);
-                app.playing = data;
-                if (trigger) $.event.trigger('playingchanged', data);
-            })
-        },
-
-        fetchStatus : function(latest) {
-
-            $.ajax({
-                type: 'POST',
-                url: 'get/status',
-                data: 'timestamp=' + app.status.timestamp,
-                success: function(data) {
-
-                    //alert(data)
-                    data = $.parseJSON(data);
-
-                    if (data) {
-                        app.status = data;
-
-                        $.event.trigger('statuschanged', data);
-                        window.setTimeout(app.fetchStatus, 10, true);
-                    }
-                    else {
-                        alert('not??')
-                    }
-                }
-            });
-
-        },
-
-        sendMessage : function(action, param) {
-
-            param.action = action;
-            var data = param;
-            
-            $.ajax({
-                type: 'POST',
-                url: '/action',
-                data: $.param(data)
-            });
-        },
-
-        playStation : function(id) {
-
-            if (app.playing.id != id) {
-                $.event.trigger('streamstop', app.playing.id);
-
-                app.sendMessage('play', { 'id' : id });
-                app.fetchPlaying();
-
-                $.event.trigger('streamplay', id);
-            }
-        },
-
-        stopStation : function() {
-            app.sendMessage('stop', {});
-            app.fetchPlaying();
-
-            $.event.trigger('streamstop', app.playing.id);
+            $.ajaxSetup({ cache: false });
         }
 
-    };
+        App.prototype.fetchStations = function() {
+            $.getJSON('get/stations', $.proxy(function(data) {
+                this.stations = data;
+                $.event.trigger('stationschanged', data);
+            }, this));
+        };
+
+        App.prototype.fetchPlaying = function() {
+            $.getJSON('get/playing', $.proxy(function(data) {
+                this.playing = data;
+                $.event.trigger('playingchanged', data);
+            }, this));
+        };
+
+        App.prototype.fetchStatus = function() {
+            $.ajax({
+                type    : 'POST',
+                url     : 'get/status',
+                data    : 'timestamp=' + this.status.timestamp,
+                cache   : false,
+                success : $.proxy(function(data) {
+                    data = $.parseJSON(data);
+                    if (data) {
+                        this.status = data;
+                        $.event.trigger('statuschanged', data);
+                        window.setTimeout($.proxy(this.fetchStatus, this), 10);
+                    }
+                }, this)
+            });
+
+        };
+
+        App.prototype.sendCommand = function(command, callback) {            
+            $.ajax({
+                type    : 'POST',
+                url     : '/action',
+                data    : $.param(command),
+                success : callback
+            });
+        };
+
+        App.prototype.play = function(id) {
+            if (this.playing.id != id) {
+                $.event.trigger('streamstop', this.playing.id);
+                this.sendCommand({ action : 'play', id : id },
+                    $.proxy(function() {
+                        this.fetchPlaying();
+                        $.event.trigger('streamplay', id);
+                    }, this)
+                );
+            }
+        };
+
+        App.prototype.stop = function() {
+            this.sendCommand({ action : 'stop' },
+                $.proxy(function() {
+                    this.fetchPlaying();
+                    $.event.trigger('streamstop', this.playing.id);
+                }, this)
+            );
+        };
+
+        App.prototype.setVolume = function(percent) {
+            this.sendCommand({
+                action  : 'setVolume',
+                percent : percent
+            });
+        };
+
+        return App;
+
+    })();
+
+
+    var app = new App();
 
 
     // Bind document events
@@ -102,7 +110,7 @@
             if (!app.loaded) {
                 app.fetchPlaying();
                 app.fetchStations();
-                app.fetchStatus(false);
+                app.fetchStatus();
                 app.loaded = true;
             }
         })
@@ -124,7 +132,7 @@
                 stationlist.html(items.join(''))
 
                 if (app.playing.id >= 0) {
-                    updateTheme($('#stationlist > li#' + app.playing.id), 'b');
+                    Util.updateTheme($('#stationlist > li#' + app.playing.id), 'b');
                 }
 
                 stationlist.listview('refresh');
@@ -138,17 +146,17 @@
 
             $(this)
                 .on('streamplay', function(event, id) {
-                    updateTheme($('#stationlist > li#' + id), 'b');
+                    Util.updateTheme($('#stationlist > li#' + id), 'b');
                 })
                 .on('streamstop', function(event, id) {
-                    updateTheme($('#stationlist > li#' + id), 'c');
+                    Util.updateTheme($('#stationlist > li#' + id), 'c');
                 })
                 .on('stationschanged', refreshStations)
                 .on('playingchanged', refreshBottom);
 
 
             stationlist.on('click', 'li', function() {
-                app.playStation($(this).attr('id'));
+                app.play($(this).attr('id'));
                 $.mobile.changePage( "/nowplaying", { transition: "slide"} );
             });
 
@@ -172,31 +180,21 @@
                 $('#stream').html(app.status.stream);
             }
 
-            $(this)
-                .on('playingchanged', refreshPlaying)
-                .on('statuschanged', refreshStatus);
+            $(this).on('playingchanged', refreshPlaying)
+                   .on('statuschanged',  refreshStatus);
 
 
             $('#volume').on('change', function(event){
-                app.sendMessage('setVolume', { 'percent' : $(this).attr('value') });
+                app.setVolume($(this).attr('value') )
             });
 
             $('#pause').on('click', function(event){
-                app.sendMessage("pause", {});
+                app.sendCommand({ action: 'pause' });
             });            
 
             $("#stop").click(function() {
-                app.stopStation();
+                app.stop();
             });
-
-            $("#volumeUp").click(function() {
-                app.sendMessage("volumeUp", {});
-            });
-
-            $("#volumeDown").click(function() {
-                app.sendMessage("volumeDown", {});
-            });
-
 
             refreshPlaying();
             refreshStatus();

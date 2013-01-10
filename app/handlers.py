@@ -1,6 +1,7 @@
 import tornado.web
 import tornado.ioloop
 import json
+import utils
 
 playerEnabled = True
 
@@ -25,7 +26,7 @@ class GetStatusHandler(tornado.web.RequestHandler):
 		player = self.application.player
 
 		status = player.log.get_status()
-		arg_ts = int(self.get_argument('timestamp', 0))
+		arg_ts = utils.try_int(self.get_argument('timestamp', 0), 0)
 
 		if arg_ts != status['timestamp']:
 			self.finish(json.dumps(status))
@@ -73,11 +74,12 @@ class ActionHandler(tornado.web.RequestHandler):
 
 		if action:
 			if action == 'play':
-				id = self.get_argument("id", None)
-				if id and int(id) != self.application.playid:
-					if playerEnabled: player.play(self.application.stations.list[int(id)][1])
+				id = utils.try_int(self.get_argument("id", None), -1)
+				if id != self.application.playid:
+					if playerEnabled: 
+						player.play(self.application.stations.list[id][1])
 					self.application.isplaying = True;
-					self.application.playid = int(id);
+					self.application.playid = id;
 
 			elif action == 'stop':
 				self.application.isplaying = False;
@@ -87,7 +89,7 @@ class ActionHandler(tornado.web.RequestHandler):
 			elif action == 'setVolume':
 				percent = self.get_argument("percent", None)
 				if percent:
-					percent = max(0, min(100, int(percent)))
+					percent = max(0, min(100, utils.try_int(percent, 0)))
 					if playerEnabled: player.setVolume(percent)
 
 			elif action == 'pause':
