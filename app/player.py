@@ -35,13 +35,15 @@ import re
 
 class PlayerLog:
 
-    def __init__(self):
+    def __init__(self, player):
 
         # Thread locks. These are needed because 
         # MPlayer status updates runs on another thread
         self.status_lock = threading.Lock()
         self.callback_lock = threading.Lock()
         self.callbacks = set()
+
+        self.player = player
 
         self.reset_status();
         
@@ -87,6 +89,11 @@ class PlayerLog:
                 self.update_status('stream', r.group(1));
 
         if not r:
+            r = re.search("Volume:\s*([0-9]*)", line)
+            if r:
+                self.update_status('volume', r.group(1));
+
+        if not r:
             if line.startswith('Starting playback...'):
                 self.update_status('connection', 'connected');
             elif line.startswith('Resolving') or line.startswith('Connecting'):
@@ -108,6 +115,7 @@ class PlayerLog:
             'bitrate'    : '',
             'url'        : '',
             'connection' : '',
+            'volume'     : self.player.volume,
         }
 
 
@@ -134,8 +142,9 @@ class Player(object):
     process = None
     
     def __init__(self, config):
-        self.log = PlayerLog()
+        self.volume = 25  # default
         self.config = config
+        self.log = PlayerLog(self)
 
     def __del__(self):
         self.close()
@@ -161,7 +170,8 @@ class Player(object):
         opts = ["mplayer", "-quiet", 
             "-slave",
             "-cache", str(self.config.cache),
-            "-cache-min", str(self.config.cachemin)]
+            "-cache-min", str(self.config.cachemin),
+            "-volume", str(self.volume)]
 
         if stream_url.split("?")[0][-3:] in ['m3u', 'pls']:
             opts.extend(["-playlist", stream_url])
@@ -199,13 +209,6 @@ class Player(object):
         self.process = None
         self.log.reset_status()
 
-    def volumeUp(self):
-        """ increase mplayer's volume """
-        self.sendCommand("volume 1")
-
-    def volumeDown(self):
-        """ decrease mplayer's volume """
-        self.sendCommand("volume 0")
-
     def setVolume(self, percent):
         self.sendCommand("volume " + str(percent) + " 1")
+        self.volume = percent

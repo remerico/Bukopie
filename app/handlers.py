@@ -86,7 +86,7 @@ class ActionHandler(tornado.web.RequestHandler):
 				self.application.playid = -1;
 				if playerEnabled: player.close()
 
-			elif action == 'setVolume':
+			elif action == 'setVol':
 				percent = self.get_argument("percent", None)
 				if percent:
 					percent = max(0, min(100, utils.try_int(percent, 0)))
@@ -94,11 +94,4 @@ class ActionHandler(tornado.web.RequestHandler):
 
 			elif action == 'pause':
 				if playerEnabled: player.pause()
-
-			elif action == 'volumeUp':
-				if playerEnabled: player.volumeUp()
-
-			elif action == 'volumeDown':
-				if playerEnabled: player.volumeDown()
-
 

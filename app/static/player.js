@@ -20,7 +20,7 @@
         function App() {
             this.loaded   = false;
             this.stations = null;
-            this.status   = { timestamp : 0 };
+            this.status   = null;
             this.playing  = { id: -1, stream: '' };
 
             $.ajaxSetup({ cache: false });
@@ -44,7 +44,7 @@
             $.ajax({
                 type    : 'POST',
                 url     : 'get/status',
-                data    : 'timestamp=' + this.status.timestamp,
+                data    : 'timestamp=' + (this.status !== null ? this.status.timestamp : 0),
                 cache   : false,
                 success : $.proxy(function(data) {
                     data = $.parseJSON(data);
@@ -90,7 +90,7 @@
 
         App.prototype.setVolume = function(percent) {
             this.sendCommand({
-                action  : 'setVolume',
+                action  : 'setVol',
                 percent : percent
             });
         };
@@ -168,31 +168,55 @@
 
         .on('pageinit', '#page-playing', function(event) {
 
+            var volumeControl = $('#volume');
+            var pauseControl = $('#pause');
+            var stopControl = $('#stop');
+
+
             var refreshPlaying = function() {
                 $('#station').html(app.playing.stream);
             }
 
             var refreshStatus = function() {
-                if (app.status.station != '') {
-                    $('#station').html(app.status.station);
+
+                if (app.status !== null) {
+
+                    if (app.status.station != '') {
+                        $('#station').html(app.status.station);
+                    }
+                    $('#status').html(app.status.connection);
+                    $('#stream').html(app.status.stream);
+
+                    if (!volumeControl._dragged) {
+                        volumeControl.attr('value', app.status.volume).slider('refresh');
+                    }
+                    
                 }
-                $('#status').html(app.status.connection);
-                $('#stream').html(app.status.stream);
             }
 
             $(this).on('playingchanged', refreshPlaying)
                    .on('statuschanged',  refreshStatus);
 
 
-            $('#volume').on('change', function(event){
-                app.setVolume($(this).attr('value') )
+            volumeControl.on('change', function(event){
+                if (volumeControl._dragged) {
+                    app.setVolume($(this).attr('value'))
+                }
             });
 
-            $('#pause').on('click', function(event){
+            volumeControl.on('slidestart', function(event) {
+                volumeControl._dragged = true;
+            });
+
+            volumeControl.on('slidestop', function(event) {
+                volumeControl._dragged = false;
+            });
+
+            pauseControl.on('click', function(event){
                 app.sendCommand({ action: 'pause' });
             });            
 
-            $("#stop").click(function() {
+            stopControl.click(function() {
                 app.stop();
             });
 
