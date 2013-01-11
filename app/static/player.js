@@ -23,7 +23,10 @@
             this.status   = null;
             this.playing  = { id: -1, stream: '' };
 
-            $.ajaxSetup({ cache: false });
+            $.ajaxSetup({ 
+                cache: false,
+                headers: { "cache-control": "no-cache" } 
+            });
         }
 
         App.prototype.fetchStations = function() {
@@ -42,16 +45,18 @@
 
         App.prototype.fetchStatus = function() {
             $.ajax({
-                type    : 'POST',
-                url     : 'get/status',
-                data    : 'timestamp=' + (this.status !== null ? this.status.timestamp : 0),
-                cache   : false,
-                success : $.proxy(function(data) {
+                type     : 'POST',
+                url      : 'get/status',
+                data     : 'timestamp=' + (this.status !== null ? this.status.timestamp : 0),
+                cache    : false,
+                complete : $.proxy(function(x, s) {
+                    window.setTimeout($.proxy(this.fetchStatus, this), 0);
+                }, this),
+                success  : $.proxy(function(data) {
                     data = $.parseJSON(data);
                     if (data) {
                         this.status = data;
                         $.event.trigger('statuschanged', data);
-                        window.setTimeout($.proxy(this.fetchStatus, this), 10);
                     }
                 }, this)
             });
@@ -190,7 +195,7 @@
                     if (!volumeControl._dragged) {
                         volumeControl.attr('value', app.status.volume).slider('refresh');
                     }
-                    
+
                 }
             }
 
