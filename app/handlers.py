@@ -47,7 +47,6 @@ class PlayerConnection(sockjs.tornado.SockJSConnection):
 		id     = data['id'];
 
 		if method == 'getStatus':
-			print(status['player'])
 			self.respond(status, None, id)
 		
 		elif method == 'play':
@@ -60,7 +59,7 @@ class PlayerConnection(sockjs.tornado.SockJSConnection):
 					'playing' : True,
 					'playid'  : play_id,
 					'stream'  : stations.list[play_id].name if play_id >= 0 else '',
-					'player'  : { 'connection' : 'connecting' }
+					'player'  : player.log.get_status()
 				})
 
 			self.respond(1, None, id)
@@ -88,7 +87,6 @@ class PlayerConnection(sockjs.tornado.SockJSConnection):
 
 		elif method == 'pause':
 			if playerEnabled: player.pause()
-
 			self.respond(1, None, id)
 
 		

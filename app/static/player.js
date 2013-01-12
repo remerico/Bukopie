@@ -295,7 +295,7 @@
             if (!this.loaded) return;
 
             if (!$.isEmptyObject(status.stream)) {
-                this.station.html(app.status.playing.stream);
+                this.station.html(status.stream);
             }
             if (!$.isEmptyObject(status.player)) {
 
