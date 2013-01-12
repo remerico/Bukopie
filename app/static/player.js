@@ -9,6 +9,10 @@
             s.removeClass(this.THEME_CLASSES)
                 .attr('data-theme', t)
                 .addClass('ui-btn-up-' + t);
+        },
+
+        isNull : function(c) {
+            return c === null || typeof c == 'undefined';
         }
     }
 
@@ -111,15 +115,16 @@
         App.prototype.play = function(id) {
             if (this.status.playid != id) {
                 $(this).trigger('streamstop', this.status.playid);
+                this.status.playing = true;
                 this.socket.send('play', [id], $.proxy(function() {
                     $(this).trigger('streamplay', id);
                 }, this));
             }
-
         };
 
         App.prototype.stop = function() {
             var id = this.status.playid;
+            this.status.playing = false;
             this.socket.send('stop', [] , $.proxy(function(result, error) {
                 $(this).trigger('streamstop', id);
             }, this));
@@ -176,14 +181,14 @@
 
             if (!this.loaded) return;
 
-            if (!$.isEmptyObject(status.stations)) {
+            if (!Util.isNull(status.stations)) {
                 console.log(status.stations)
                 this.refreshStations(status.stations);
             }
-            if (!$.isEmptyObject(status.stream)) {
+            if (!Util.isNull(status.stream)) {
                 this.refreshPlaying(status.stream);
             }
-            if (!$.isEmptyObject(status.playid)) {
+            if (!Util.isNull(status.playid)) {
                 this.refreshSelectedStream(status.playid);
             }
 
@@ -240,7 +245,11 @@
             this.loaded = false;
             this.app = app;
 
-            $(app).on('handlestatus', $.proxy(this.refresh, this));
+            $(app).on('handlestatus', $.proxy(function(event, data) {
+                if (!this.app.status.playing) $.mobile.changePage('/', { transition: "none"} );
+                this.refresh(event, data);
+            }, this));
+
 
             $(document)
                 .on('pageinit', selector, $.proxy(this.init, this))
@@ -294,10 +303,10 @@
 
             if (!this.loaded) return;
 
-            if (!$.isEmptyObject(status.stream)) {
+            if (!Util.isNull(status.stream)) {
                 this.station.html(status.stream);
             }
-            if (!$.isEmptyObject(status.player)) {
+            if (!Util.isNull(status.player)) {
 
                 if (status.player.station != '') {
                     this.station.html(status.player.station);
