@@ -1,97 +1,115 @@
 import tornado.web
-import tornado.ioloop
-import json
+import sockjs.tornado
+import simplejson as json
+
 import utils
+from config import Config
+from stations import Stations
+from player import Player
+
+
+config = Config()
 
 playerEnabled = True
+player = Player(config)
+stations = Stations(config.stationfile)
+
+status = {
+	'stations' : stations.list,
+	'playing'  : False,
+	'stream'   : '',
+	'playid'   : -1,
+	'player'   : player.log.get_status()
+}
+
+class PlayerConnection(sockjs.tornado.SockJSConnection):
+	connections = set()
+
+	def __init__(self, session):
+		player.log.callback = self.handle_player_status;
+		super(PlayerConnection, self).__init__(session)
+
+	def on_open(self, request):
+		self.connections.add(self)
+		print(str(len(self.connections)) + ' users')
+
+	def on_close(self):
+		self.connections.remove(self)
+		print(str(len(self.connections)) + ' users')
+
+	def on_message(self, message):
+		print('RECV : ' + message)
+
+		data   = json.loads(message)
+
+		method = data['method'];
+		params = data['params'];
+		id     = data['id'];
+
+		if method == 'getStatus':
+			print(status['player'])
+			self.respond(status, None, id)
+		
+		elif method == 'play':
+			play_id = utils.try_int(params[0], -1)
+
+			if play_id >= 0 and play_id != status['playid']:
+				if playerEnabled: player.play(stations.get_id(play_id).url)
+
+				self.update_status({ 
+					'playing' : True,
+					'playid'  : play_id,
+					'stream'  : stations.list[play_id].name if play_id >= 0 else '',
+					'player'  : { 'connection' : 'connecting' }
+				})
+
+			self.respond(1, None, id)
+
+		elif method == 'stop':
+			if playerEnabled: player.close()
+
+			self.update_status({ 
+				'playing' : False, 
+				'playid'  : -1,
+				'stream'  : '',
+				'player'  : player.log.get_status()
+			})
+
+			self.respond(1, None, id)
+
+		elif method == 'setVol':
+			percent = utils.try_int(params[0], -1)
+
+			if percent >= 0:
+				percent = max(0, min(100, percent))
+				if playerEnabled: player.setVolume(percent)
+
+			self.respond(1, None, id)
+
+		elif method == 'pause':
+			if playerEnabled: player.pause()
+
+			self.respond(1, None, id)
+
+		
+	def respond(self, result, error, id):
+		msg = json.dumps({ 'result' : result, 'error'  : error, 'id' : id })
+		self.send(msg)
+
+	def notify(self, method, params):
+		msg = json.dumps({ 'method' : method, 'params' : params })
+		self.broadcast(self.connections, msg);
+
+	def handle_player_status(self, key, value):
+		self.update_status({ 'player' : { key : value } })
+
+	def update_status(self, values):
+		global status
+		status = utils.merge_dict(status, values)
+		self.notify('status', values)
+
+
 
 class MainHandler(tornado.web.RequestHandler):
 	def get(self):	
 		self.render("index.html", config=self.application.config)
-
-
-class NowPlayingHandler(tornado.web.RequestHandler):
-	def get(self):
-		if self.application.isplaying:
-			self.render('nowplaying.html', config=self.application.config)
-			pass
-		else:
-			self.redirect('/');
-
-
-class GetStatusHandler(tornado.web.RequestHandler):
-
-	@tornado.web.asynchronous
-	def post(self):
-		player = self.application.player
-
-		status = player.log.get_status()
-		arg_ts = utils.try_int(self.get_argument('timestamp', 0), 0)
-
-		if arg_ts != status['timestamp']:
-			self.finish(json.dumps(status))
-		else:
-			player.log.add_callback(self.new_update)
-
-	def new_update(self, message):
-		if self.request.connection.stream.closed(): 
-			return
-		self.finish(json.dumps(message))
-
-	def on_connection_close(self):
-		player = self.application.player
-		player.log.remove_callback(self.new_update)
-
-
-class GetPlayingHandler(tornado.web.RequestHandler):
-	def get(self):
-		playing = {}
-		playing['id'] = self.application.playid
-		playing['stream'] = self.application.stations.list[self.application.playid][0] if self.application.playid >= 0 else ''
-		self.write(json.dumps(playing))
-
-
-class StationsHandler(tornado.web.RequestHandler):
-	def get(self):
-
-		list = []
-		i = 0
-		for s in self.application.stations.list:
-			list.append({ 'id' : i, 'name' : s[0] })
-			i += 1
-
-		if self.application.playid >= 0:
-			list[self.application.playid]['playing'] = True
-
-		self.write(json.dumps(list))
-
-
-class ActionHandler(tornado.web.RequestHandler):
-
-	def post(self):
-		player = self.application.player
-		action = self.get_argument("action", None)
-
-		if action:
-			if action == 'play':
-				id = utils.try_int(self.get_argument("id", None), -1)
-				if id != self.application.playid:
-					if playerEnabled: 
-						player.play(self.application.stations.list[id][1])
-					self.application.isplaying = True;
-					self.application.playid = id;
-
-			elif action == 'stop':
-				self.application.isplaying = False;
-				self.application.playid = -1;
-				if playerEnabled: player.close()
-
-			elif action == 'setVol':
-				percent = self.get_argument("percent", None)
-				if percent:
-					percent = max(0, min(100, utils.try_int(percent, 0)))
-					if playerEnabled: player.setVolume(percent)
-
-			elif action == 'pause':
-				if playerEnabled: player.pause()
-

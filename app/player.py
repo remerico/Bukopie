@@ -17,21 +17,16 @@ import re
         get_time_pos        : Time in seconds
         get_audio_bitrate   : Bitrate
 
-
     Status messages
         Name   : Chillout Dreams - DIGITALLY IMPORTED - relax to the sounds of dream and ibiza style chillout
         Genre  : Electronic Chillout Dream
         Website: http://www.di.fm/chilloutdreams
         Public : yes
         Bitrate: 96kbit/s
-
         Starting playback...
-
         ICY Info: StreamTitle='Baby Mammoth - Lost Bearings';StreamUrl='';
-
-
-        ICY Info: StreamTitle=\'(.*?)\';
  '''
+
 
 class PlayerLog:
 
@@ -40,13 +35,11 @@ class PlayerLog:
         # Thread locks. These are needed because 
         # MPlayer status updates runs on another thread
         self.status_lock = threading.Lock()
-        self.callback_lock = threading.Lock()
-        self.callbacks = set()
 
+        self.callback = None
         self.player = player
 
         self.reset_status();
-        
 
     def write(self, message):
         message = message.strip()
@@ -54,19 +47,6 @@ class PlayerLog:
         if len(message) > 0:
             print(message)
             self.parse_line(message)
-            self.process_callbacks()
-
-
-    def process_callbacks(self):
-        self.callback_lock.acquire()
-        for c in self.callbacks:
-            try:
-                c(self.status)
-            except:
-                logging.error("Error in update callback", exc_info=True)
-
-        self.callbacks.clear()
-        self.callback_lock.release()
 
 
     def parse_line(self, line):
@@ -102,14 +82,14 @@ class PlayerLog:
 
     def update_status(self, key, value):
         self.status_lock.acquire()
-        self.status[key] = value
-        self.status['timestamp'] = int(time.time())
-        print('status updated!')
+        if (self.status[key] != value):
+            self.status[key] = value
+            if self.callback != None:
+                self.callback(key, value)
         self.status_lock.release()
 
     def reset_status(self):
         self.status = {
-            'timestamp'  : 0,
             'stream'     : '',
             'station'    : '',
             'bitrate'    : '',
@@ -118,20 +98,9 @@ class PlayerLog:
             'volume'     : self.player.volume,
         }
 
-
-    def add_callback(self, callback):
-        self.callback_lock.acquire()
-        self.callbacks.add(callback)
-        self.callback_lock.release()
-
-    def remove_callback(self, callback):
-        self.callback_lock.acquire()
-        self.callbacks.remove(callback)
-        self.callback_lock.release()
-
     def get_status(self):
         self.status_lock.acquire()
-        result = self.status
+        result = self.status.copy()
         self.status_lock.release()
         return result
 

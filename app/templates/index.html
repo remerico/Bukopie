@@ -17,7 +17,32 @@
 
 	<div data-role="footer" fullscreen="true" data-position="fixed">	
 		<a href="#" data-role="button" data-icon="gear">Settings</a>
-		<a href="/nowplaying" id="nowplaying-bottom"></a>
+		<a href="#nowplaying" id="nowplaying-bottom"></a>
+	</div>
+
+</div>
+
+
+<div data-role="page" id="nowplaying">
+
+	<div data-role="header">
+		<a data-direction="reverse" href="/"  data-transition="slide" data-icon="back">Back</a>
+		<h1>Now Playing</h1>
+	</div>
+	<div data-role="content">	
+		<h2 id="stream"></h2>
+		<h3 id="station"></h3>
+		<h3 id="status"></h3>
+
+		<div style="text-align: center; width: 100%">
+			<div data-role="controlgroup" data-type="horizontal" style="width: 100%">
+				<a id="pause" href="#" data-role="button" data-transition="slide">Pause</a>
+				<a id="stop" data-direction="reverse" href="/" data-role="button" data-transition="slide">Stop</a>
+			</div>
+
+			<input type="range" style="display:none; width: 100%" name="volume" id="volume" value="60" min="0" max="100" data-highlight="true"/>
+		</div>
+
 	</div>
 
 </div>

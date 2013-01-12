@@ -1,6 +1,9 @@
 import csv
 import json
+from collections import namedtuple
 from os import path
+
+StationData = namedtuple('StationData', ['id', 'name', 'url'])
 
 class Stations:
 
@@ -18,11 +21,16 @@ class Stations:
 		except IOError, e:
 			print str(e)
 			return stations
-		
+	
+		i = 0;	
 		for row in csv.reader(csvfile, skipinitialspace=True):
 			if row[0].startswith('#'): continue
 			name, url = map(lambda s: s.strip(), row)
-			stations.append((name, url))
+			stations.append(StationData(i, name, url))
+			i += 1
 
 		csvfile.close()
 		return stations
+
+	def get_id(self, id):
+		return self.list[id];
