@@ -47,7 +47,6 @@
 
         _parseTrackInfo : function(data) {
 
-            console.log(data);
             info = {}
 
             if (!data.error) {
@@ -60,6 +59,7 @@
 
             }
 
+            console.log(info)
             return info;
 
         }
@@ -159,8 +159,8 @@
         }
 
         App.prototype.updateStatus = function(stat) {
-            $(this).trigger('handlestatus', stat);
             $.extend(true, this.status, stat);
+            $(this).trigger('handlestatus', stat);
         }
 
         App.prototype.play = function(id) {
@@ -366,7 +366,7 @@
                 this.stream.html(status.player.stream);
 
 
-                if (!Util.isNull(status.player.stream) && status.player.stream != this.app.status.player.stream) {
+                if (!Util.isNull(status.player.stream) && status.player.stream != this.previousStream) {
                     if (status.player.stream.length > 0) {
                         Services.getTrackInfo(status.player.stream, $.proxy(function(data) {
                             if (data.cover) {
@@ -380,6 +380,7 @@
                     else {
                         $(this.coverart).removeAttr('src').hide();
                     }
+                    this.previousStream = status.player.stream;
                 }
 
                 if (!this.volumeControl._dragged) {
