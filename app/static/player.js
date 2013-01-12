@@ -39,7 +39,7 @@
                 }),
                 success : $.proxy(function(data) {
                     info = this._parseTrackInfo(data);
-                    console.log(info)
+                    // console.log(info)
                     if (callback) callback(info);
                 }, this)
             });
@@ -159,8 +159,8 @@
         }
 
         App.prototype.updateStatus = function(stat) {
-            $.extend(true, this.status, stat);
             $(this).trigger('handlestatus', stat);
+            $.extend(true, this.status, stat);
         }
 
         App.prototype.play = function(id) {
@@ -233,7 +233,6 @@
             if (!this.loaded) return;
 
             if (!Util.isNull(status.stations)) {
-                console.log(status.stations)
                 this.refreshStations(status.stations);
             }
             if (!Util.isNull(status.stream)) {
@@ -296,9 +295,9 @@
             this.loaded = false;
             this.app = app;
 
-            $(app).on('handlestatus', $.proxy(function(event, data) {
+            $(app).on('handlestatus', $.proxy(function(event, status) {
                 if (!this.app.status.playing) $.mobile.changePage('/', { transition: "none"} );
-                this.refresh(event, data);
+                this.refresh(event, status);
             }, this));
 
 
@@ -367,18 +366,20 @@
                 this.stream.html(status.player.stream);
 
 
-                if (status.player.stream != '') {
-                    Services.getTrackInfo(status.player.stream, $.proxy(function(data) {
-                        if (data.cover) {
-                            $(this.coverart).attr('src', data.cover).show();
-                        }
-                        else {
-                            $(this.coverart).removeAttr('src').hide();
-                        }
-                    }, this));
-                }
-                else {
-                    $(this.coverart).removeAttr('src').hide();
+                if (!Util.isNull(status.player.stream) && status.player.stream != this.app.status.player.stream) {
+                    if (status.player.stream.length > 0) {
+                        Services.getTrackInfo(status.player.stream, $.proxy(function(data) {
+                            if (data.cover) {
+                                $(this.coverart).attr('src', data.cover).show();
+                            }
+                            else {
+                                $(this.coverart).removeAttr('src').hide();
+                            }
+                        }, this));
+                    }
+                    else {
+                        $(this.coverart).removeAttr('src').hide();
+                    }
                 }
 
                 if (!this.volumeControl._dragged) {
