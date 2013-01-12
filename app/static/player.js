@@ -1,6 +1,5 @@
 (function() {
 
-
     var Util = {
         
         THEME_CLASSES : 'ui-btn-up-a ui-btn-up-b ui-btn-up-c ui-btn-up-d ui-btn-up-e ui-btn-hover-a ui-btn-hover-b ui-btn-hover-c ui-btn-hover-d ui-btn-hover-e',
@@ -14,7 +13,59 @@
         isNull : function(c) {
             return c === null || typeof c == 'undefined';
         }
+
     }
+
+
+    var Services = {
+
+        lastFmKey : 'c170b328716d00ae3dc47eaa0644a677',
+
+        getTrackInfo : function(track, callback) {
+
+            if (Util.isNull(track) || track == '') return; 
+
+            var split = track.split(' - ');
+
+            $.ajax({
+                url: 'http://ws.audioscrobbler.com/2.0/',
+                type: "post",
+                data: $.param({
+                    format  : 'json', 
+                    method  : 'track.getInfo',
+                    api_key : this.lastFmKey,
+                    artist  : split[0],
+                    track   : split[1]
+                }),
+                success : $.proxy(function(data) {
+                    info = this._parseTrackInfo(data);
+                    console.log(info)
+                    if (callback) callback(info);
+                }, this)
+            });
+        },
+
+        _parseTrackInfo : function(data) {
+
+            console.log(data);
+            info = {}
+
+            if (!data.error) {
+                // why is it so deeply nested, I do not know
+                if (!Util.isNull(data.track) && !Util.isNull(data.track.album) && !Util.isNull(data.track.album.image)) {
+                    var i = data.track.album.image;
+                    var l = i.length;
+                    if (l > 0) info.cover = i[l - 1]['#text'];
+                }
+
+            }
+
+            return info;
+
+        }
+
+    }
+
 
     // JSON-RPC protocol
     var Socket = (function() {
@@ -268,6 +319,7 @@
             this.station = $('#station');
             this.stream = $('#stream');
             this.connection = $('#status');
+            this.coverart = $('#cover');
 
             volumeControl = this.volumeControl;
 
@@ -308,11 +360,26 @@
             }
             if (!Util.isNull(status.player)) {
 
-                if (status.player.station != '') {
-                    this.station.html(status.player.station);
-                }
+                // if (status.player.station != '') {
+                //     this.station.html(status.player.station);
+                // }
                 this.connection.html(status.player.connection);
                 this.stream.html(status.player.stream);
+
+
+                if (status.player.stream != '') {
+                    Services.getTrackInfo(status.player.stream, $.proxy(function(data) {
+                        if (data.cover) {
+                            $(this.coverart).attr('src', data.cover).show();
+                        }
+                        else {
+                            $(this.coverart).removeAttr('src').hide();
+                        }
+                    }, this));
+                }
+                else {
+                    $(this.coverart).removeAttr('src').hide();
+                }
 
                 if (!this.volumeControl._dragged) {
                     this.volumeControl.attr('value', status.player.volume).slider('refresh');
@@ -336,6 +403,17 @@
         app.connect();
         $(app.socket).on('connected', function(event) {
             app.fetchStatus();
+        });
+
+        $(app).on('handlestatus', function(event, status) {
+            if (!Util.isNull(status.player.stream)) {
+                if (status.player.stream != '') {
+                    document.title = status.player.stream;
+                }
+                else {
+                     document.title = 'Bukopie';   
+                }
+            }
         });
     });
 
