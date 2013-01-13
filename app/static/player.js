@@ -97,7 +97,7 @@
         }
 
         Socket.prototype._onmessage = function(e) { 
-            console.log('received: ' + e.data)
+            //console.log('received: ' + e.data)
             var data = $.parseJSON(e.data);
 
             if (typeof data.id !== 'undefined') {
@@ -190,8 +190,8 @@
         };
 
         App.prototype.setVolume = function(percent) {
-            if (percent != this.status.player.volume)
-                this.socket.send('setVol', [percent]);
+            //if (percent != this.status.player.volume)
+            this.socket.send('setVol', [percent]);
         };
 
         App.prototype.pause = function() {
@@ -331,17 +331,17 @@
             volumeControl = this.volumeControl;
 
             this.volumeControl.on('change', function(event){
-                if (volumeControl._dragged) {
-                    app.setVolume($(this).attr('value'))
+                if (volumeControl.waiting) {
+                    volumeControl.attr('value', app.status.player.volume);
                 }
-            });
-
-            this.volumeControl.on('slidestart', function(event) {
-                volumeControl._dragged = true;
-            });
-
-            this.volumeControl.on('slidestop', function(event) {
-                volumeControl._dragged = false;
+                else {
+                    var value = $(this).attr('value');
+                    if (value != app.status.player.volume) {
+                        volumeControl.waiting = true;
+                        app.setVolume(value);
+                    }
+                }
+                
             });
 
             this.pauseControl.on('click', function(event){
@@ -374,6 +374,7 @@
                 this.stream.html(status.player.stream);
 
 
+                // Album art
                 if (!Util.isNull(status.player.stream) && status.player.stream != this.previousStream) {
                     if (status.player.stream.length > 0) {
                         Services.getTrackInfo(status.player.stream, $.proxy(function(data) {
@@ -391,7 +392,8 @@
                     this.previousStream = status.player.stream;
                 }
 
-                if (!this.volumeControl._dragged) {
+                if (!Util.isNull(status.player.volume)) {
+                    this.volumeControl.waiting = false;
                     this.volumeControl.attr('value', status.player.volume).slider('refresh');
                 }
 
