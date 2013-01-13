@@ -25,6 +25,12 @@ import re
         Bitrate: 96kbit/s
         Starting playback...
         ICY Info: StreamTitle='Baby Mammoth - Lost Bearings';StreamUrl='';
+
+
+    Sample titles
+        Killing Joke - 1986 - Love Of The Masses (6:07)
+        Wild Flowers, The - 1984 - After All These Years (3:38)
+        Alf Clausen & Tom Kramer - 80s - A.L.F. (1:07)
  '''
 
 

@@ -26,6 +26,13 @@
             if (Util.isNull(track) || track == '') return; 
 
             var split = track.split(' - ');
+            if (split.length < 2) return;
+
+            artist = split[0];
+            track = split[split.length - 1];
+            track = track.replace(/\([^)]*\)/gm, '').trim()
+
+            console.log('artist: ' + artist + '  track: ' + track);
 
             $.ajax({
                 url: 'http://ws.audioscrobbler.com/2.0/',
@@ -34,8 +41,8 @@
                     format  : 'json', 
                     method  : 'track.getInfo',
                     api_key : this.lastFmKey,
-                    artist  : split[0],
-                    track   : split[1]
+                    artist  : artist,
+                    track   : track
                 }),
                 success : $.proxy(function(data) {
                     info = this._parseTrackInfo(data);
@@ -47,6 +54,7 @@
 
         _parseTrackInfo : function(data) {
 
+            // console.log(data)
             info = {}
 
             if (!data.error) {
