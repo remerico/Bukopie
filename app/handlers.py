@@ -6,13 +6,14 @@ import utils
 from config import Config
 from stations import Stations
 from player import Player
+from services import Services
 
-
+# Global effing variables
 config = Config()
-
 playerEnabled = True
 player = Player(config)
 stations = Stations(config.stationfile)
+services = Services()
 
 status = {
 	'stations' : stations.list,
@@ -30,7 +31,7 @@ class PlayerConnection(sockjs.tornado.SockJSConnection):
 		super(PlayerConnection, self).__init__(session)
 
 	def on_open(self, request):
-		self.connections.add(self)
+		self.connections.add(self) 
 		print(str(len(self.connections)) + ' users')
 
 	def on_close(self):
@@ -59,7 +60,8 @@ class PlayerConnection(sockjs.tornado.SockJSConnection):
 					'playing' : True,
 					'playid'  : play_id,
 					'stream'  : stations.list[play_id].name if play_id >= 0 else '',
-					'player'  : player.log.get_status()
+					'player'  : player.log.get_status(),
+					'trackinfo' : {}
 				})
 
 			self.respond(1, None, id)
@@ -71,7 +73,8 @@ class PlayerConnection(sockjs.tornado.SockJSConnection):
 				'playing' : False, 
 				'playid'  : -1,
 				'stream'  : '',
-				'player'  : player.log.get_status()
+				'player'  : player.log.get_status(),
+				'trackinfo' : {}
 			})
 
 			self.respond(1, None, id)
@@ -98,14 +101,20 @@ class PlayerConnection(sockjs.tornado.SockJSConnection):
 		msg = json.dumps({ 'method' : method, 'params' : params })
 		self.broadcast(self.connections, msg);
 
-	def handle_player_status(self, key, value):
-		self.update_status({ 'player' : { key : value } })
-
 	def update_status(self, values):
 		global status
 		status = utils.merge_dict(status, values)
 		self.notify('status', values)
 
+	# Event handlers
+	def handle_player_status(self, key, value):
+		self.update_status({ 'player' : { key : value } })
+
+		if key == 'stream':
+			services.get_track_info(value, self.handle_track_info)
+
+	def handle_track_info(self, trackinfo):
+		self.update_status({ 'trackinfo' : trackinfo })
 
 
 class MainHandler(tornado.web.RequestHandler):

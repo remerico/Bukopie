@@ -17,64 +17,6 @@
     }
 
 
-    var Services = {
-
-        lastFmKey : 'c170b328716d00ae3dc47eaa0644a677',
-
-        getTrackInfo : function(track, callback) {
-
-            if (Util.isNull(track) || track == '') return; 
-
-            var split = track.split(' - ');
-            if (split.length < 2) return;
-
-            artist = split[0];
-            track = split[split.length - 1];
-            track = track.replace(/\([^)]*\)/gm, '').trim()
-
-            console.log('artist: ' + artist + '  track: ' + track);
-
-            $.ajax({
-                url: 'http://ws.audioscrobbler.com/2.0/',
-                type: "post",
-                data: $.param({
-                    format  : 'json', 
-                    method  : 'track.getInfo',
-                    api_key : this.lastFmKey,
-                    artist  : artist,
-                    track   : track
-                }),
-                success : $.proxy(function(data) {
-                    info = this._parseTrackInfo(data);
-                    // console.log(info)
-                    if (callback) callback(info);
-                }, this)
-            });
-        },
-
-        _parseTrackInfo : function(data) {
-
-            // console.log(data)
-            info = {}
-
-            if (!data.error) {
-                // why is it so deeply nested, I do not know
-                if (!Util.isNull(data.track) && !Util.isNull(data.track.album) && !Util.isNull(data.track.album.image)) {
-                    var i = data.track.album.image;
-                    var l = i.length;
-                    if (l > 0) info.cover = i[l - 1]['#text'];
-                }
-
-            }
-
-            console.log(info)
-            return info;
-
-        }
-
-    }
-
-
     // JSON-RPC protocol
     var Socket = (function() {
 
@@ -97,7 +39,7 @@
         }
 
         Socket.prototype._onmessage = function(e) { 
-            //console.log('received: ' + e.data)
+            console.log('received: ' + e.data)
             var data = $.parseJSON(e.data);
 
             if (typeof data.id !== 'undefined') {
@@ -374,30 +316,22 @@
                 this.stream.html(status.player.stream);
 
 
-                // Album art
-                if (!Util.isNull(status.player.stream) && status.player.stream != this.previousStream) {
-                    if (status.player.stream.length > 0) {
-                        Services.getTrackInfo(status.player.stream, $.proxy(function(data) {
-                            if (data.cover) {
-                                $(this.coverart).attr('src', data.cover).show();
-                            }
-                            else {
-                                $(this.coverart).removeAttr('src').hide();
-                            }
-                        }, this));
-                    }
-                    else {
-                        $(this.coverart).removeAttr('src').hide();
-                    }
-                    this.previousStream = status.player.stream;
-                }
-
                 if (!Util.isNull(status.player.volume)) {
                     this.volumeControl.waiting = false;
                     this.volumeControl.attr('value', status.player.volume).slider('refresh');
                 }
 
             }
+
+            // Album art
+            if (!Util.isNull(status.trackinfo)) {
+                if (!Util.isNull(status.trackinfo.cover)) {
+                    this.coverart.attr('src', status.trackinfo.cover).stop(true,true).hide().fadeIn();
+                } else {
+                    this.coverart.removeAttr('src').hide();
+                }
+            }
+
 
         }
 
@@ -418,7 +352,7 @@
         });
 
         $(app).on('handlestatus', function(event, status) {
-            if (!Util.isNull(status.player.stream)) {
+            if (!Util.isNull(status.player) && !Util.isNull(status.player.stream)) {
                 if (status.player.stream != '') {
                     document.title = status.player.stream;
                 }
