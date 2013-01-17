@@ -6,6 +6,8 @@ import logging
 import time
 import re
 
+import utils
+
 '''
     Slave mode options
         get_property path   : URL
@@ -144,9 +146,10 @@ class Player(object):
 
         opts = ["mplayer", "-quiet", 
             "-slave",
-            "-cache", str(self.config.cache),
-            "-cache-min", str(self.config.cachemin),
-            "-volume", str(self.volume)]
+            "-softvol",
+            "-cache", str(self.config.get('cache-kb')),
+            "-cache-min", str(self.config.get('cache-min')),
+            "-volume", str(self.config.get('volume'))]
 
         if stream_url.split("?")[0][-3:] in ['m3u', 'pls']:
             opts.extend(["-playlist", stream_url])
@@ -183,7 +186,9 @@ class Player(object):
             self.process.wait()
         self.process = None
         self.log.reset_status()
+        self.config.save()
 
     def setVolume(self, percent):
         self.sendCommand("volume " + str(percent) + " 1")
         self.volume = percent
+        self.config.set('volume', percent)

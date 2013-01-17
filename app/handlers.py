@@ -12,7 +12,7 @@ from services import Services
 config = Config()
 playerEnabled = True
 player = Player(config)
-stations = Stations(config.stationfile)
+stations = Stations(config.get('stationfile'))
 services = Services()
 
 status = {
@@ -22,6 +22,7 @@ status = {
 	'playid'   : -1,
 	'player'   : player.log.get_status()
 }
+
 
 class PlayerConnection(sockjs.tornado.SockJSConnection):
 	connections = set()

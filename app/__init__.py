@@ -1,35 +1,8 @@
-# coding: utf-8
-import os
+" Bukopie -- web-based internet radio "
 
-import tornado.ioloop
-import tornado.web
-import sockjs.tornado
+version_info = (0, 0, 1)
 
-from config import Config
-import handlers as h
-
-
-class Application(tornado.web.Application):
-    def __init__(self):
-
-		self.config = Config()
-
-		handlers = [
-			(r"/",            h.MainHandler),
-			(r"/favicon.ico", tornado.web.StaticFileHandler, {'path': 'favicon.ico'}),
-		] + sockjs.tornado.SockJSRouter(h.PlayerConnection, '/socket').urls 
-
-		settings = dict(
-			template_path = os.path.join(os.path.dirname(__file__), "templates"),
-			static_path   = os.path.join(os.path.dirname(__file__), "static"),
-		)
-
-		tornado.web.Application.__init__(self, handlers, **settings)
-		self.listen(self.config.port)
-		
-
-def run():
-	print('Bukopie running')
-	Application()
-	tornado.ioloop.IOLoop.instance().start()
+__version__ = version = '.'.join(map(str, version_info))
+__project__ = __name__
+__author__ = "Remerico Cruz"
 
