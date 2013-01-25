@@ -76,10 +76,10 @@ class PlayerLog:
             if r:
                 self.update_status('stream', r.group(1));
 
-        if not r:
-            r = re.search("Volume:\s*([0-9]*)", line)
-            if r:
-                self.update_status('volume', r.group(1));
+        #if not r:
+        #    r = re.search("Volume:\s*([0-9]*)", line)
+        #    if r:
+        #        self.update_status('volume', r.group(1));
 
         if not r:
             if line.startswith('Starting playback...'):

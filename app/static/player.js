@@ -271,20 +271,24 @@
             this.coverart = $('#cover');
 
             volumeControl = this.volumeControl;
+            this.currentVol = volumeControl.attr('value')
 
-            this.volumeControl.on('change', function(event){
-                if (volumeControl.waiting) {
-                    volumeControl.attr('value', app.status.player.volume);
+            this.volumeControl.on('change', $.proxy(function(event){
+                var value = volumeControl.attr('value')
+                if (volumeControl._dragged && this.currentVol != value) {
+                    app.setVolume(value);
+                    this.currentVol = value;
                 }
-                else {
-                    var value = $(this).attr('value');
-                    if (value != app.status.player.volume) {
-                        volumeControl.waiting = true;
-                        app.setVolume(value);
-                    }
-                }
-                
+            }, this));
+
+            this.volumeControl.on('slidestart', function(event) {
+                volumeControl._dragged = true;
             });
+
+            this.volumeControl.on('slidestop', function(event) {
+                volumeControl._dragged = false;
+            });
+
 
             this.pauseControl.on('click', function(event){
                 _this.app.pause();
@@ -315,12 +319,11 @@
                 this.connection.html(status.player.connection);
                 this.stream.html(status.player.stream);
 
+            }
 
-                if (!Util.isNull(status.player.volume)) {
-                    this.volumeControl.waiting = false;
-                    this.volumeControl.attr('value', status.player.volume).slider('refresh');
-                }
-
+            if (!Util.isNull(status.volume)) {
+                this.volumeControl.waiting = false;
+                this.volumeControl.attr('value', status.volume).slider('refresh');
             }
 
             // Album art

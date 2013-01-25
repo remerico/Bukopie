@@ -27,7 +27,8 @@ class Application(tornado.web.Application):
             'playing'  : False,
             'stream'   : '',
             'playid'   : -1,
-            'player'   : self.player.log.get_status()
+            'player'   : self.player.log.get_status(),
+            'volume'   : '25'
         }
 
 

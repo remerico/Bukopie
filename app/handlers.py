@@ -3,7 +3,7 @@ import sockjs.tornado
 import simplejson as json
 
 import utils
-from jsonrpc import JsonRpcHandler
+from jsonrpc import JsonRpcHandler, Recipient
 
 
 class GetStatusHandler(JsonRpcHandler):
@@ -65,7 +65,9 @@ class SetVolumeHandler(JsonRpcHandler):
             if self.application.playerEnabled:
                 self.application.player.setVolume(percent)
 
+        self.application.status['volume'] = str(percent)
         self.respond(1)
+        self.notify('status', { 'volume' : str(percent)}, Recipient.Others)
 
 
 class PauseHandler(JsonRpcHandler):
