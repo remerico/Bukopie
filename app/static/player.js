@@ -322,8 +322,9 @@
             }
 
             if (!Util.isNull(status.volume)) {
-                this.volumeControl.waiting = false;
-                this.volumeControl.attr('value', status.volume).slider('refresh');
+                if (!this.volumeControl._dragged) {
+                    this.volumeControl.attr('value', status.volume).slider('refresh');
+                }
             }
 
             // Album art

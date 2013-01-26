@@ -36,8 +36,11 @@ class JsonRpcRouter(sockjs.tornado.SockJSRouter):
 
     def notify(self, method, params, clients=None):
         if not clients: clients = self._connections
-        msg = json.dumps({ 'method' : method, 'params' : params })
-        self.broadcast(clients, msg)
+
+        if len(clients) > 0:
+            msg = json.dumps({ 'method' : method, 'params' : params })
+            print(msg)
+            self.broadcast(clients, msg)
 
     @property
     def connections(self):
@@ -92,6 +95,7 @@ class JsonRpcConnection(sockjs.tornado.SockJSConnection):
         others = set()
         for c in self.server.connections:
             if c != self: others.add(c)
+        #print('serving to ' + str(len(others)))
         return others
 
 
