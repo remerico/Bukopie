@@ -6,7 +6,7 @@
 DAEMON_PATH="/home/rem/services/Bukopie"
 
 DAEMON=run.sh
-DAEMONOPTS="-my opts"
+DAEMONOPTS=""
 
 NAME=bukopie
 DESC="Bukopie internet radio"
