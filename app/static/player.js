@@ -153,7 +153,7 @@
             this.app = app;
 
             this.t_stationList   = '#stationlist';
-            this.t_playingStream = '#nowplaying-bottom';
+            this.t_playingStream = '#nowplaying-button';
             this.selectedStream  = -1;
 
             $(app).on('handlestatus', $.proxy(this.refresh, this));
@@ -213,7 +213,8 @@
         };
 
         IndexView.prototype.refreshPlaying = function(stream) {
-            $(this.t_playingStream).html(stream);
+            if (stream.length > 0) $(this.t_playingStream).show();
+            else $(this.t_playingStream).hide();
         };
 
         IndexView.prototype.refreshSelectedStream = function(id) {

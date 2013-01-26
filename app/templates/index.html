@@ -4,20 +4,15 @@
 
 <div data-role="page" id="page-index">
 
-	<div data-role="header">
+	<div data-role="header" data-position="fixed">
+		<a href="#" data-role="button" data-icon="gear" data-iconpos="notext">Settings</a>
 		<h1>Bukopie</h1>
+		<a href="#nowplaying" id="nowplaying-button" data-transition="slide" data-icon="arrow-r" class="ui-btn-right">Now Playing</a>
 	</div>
 
 	<div data-role="content">	
-
 		<ul id="stationlist" data-role="listview" data-theme="c" data-filter="true">
 		</ul>
-
-	</div>
-
-	<div data-role="footer" fullscreen="true" data-position="fixed">	
-		<a href="#" data-role="button" data-icon="gear">Settings</a>
-		<a href="#nowplaying" id="nowplaying-bottom"></a>
 	</div>
 
 </div>
@@ -25,26 +20,36 @@
 
 <div data-role="page" id="nowplaying">
 
-	<div data-role="header">
-		<a data-direction="reverse" href="/"  data-transition="slide" data-icon="back">Back</a>
+	<div data-role="header" data-position="fixed">
+		<a data-direction="reverse" href="/" data-transition="slide" data-icon="arrow-l">Back</a>
 		<h1>Now Playing</h1>
 	</div>
-	<div data-role="content">	
-		<h2 id="stream"></h3>
-		<h3 id="station"></h4>
-		<h3 id="status"></h4>
 
+	<div data-role="content">	
+		<table id="track-info" style="text-align: center; width: 100%">
+			<tr><td><span id="stream" style="font-weight: bold"></span></td></tr>
+			<tr><td><span id="station"></span></td></tr>
+			<tr><td><span id="status"></span></td></tr>
+		</table>
 
 		<div style="text-align: center; width: 100%">
 			<img id="cover" src="" />
-			<div data-role="controlgroup" data-type="horizontal" style="width: 100%">
-				<a id="pause" href="#" data-role="button" data-transition="slide">Pause</a>
-				<a id="stop" data-direction="reverse" href="/" data-role="button" data-transition="slide">Stop</a>
-			</div>
-
-			<input type="range" style="display:none; width: 100%" name="volume" id="volume" value="60" min="0" max="100" data-highlight="true"/>
 		</div>
 
+	</div>
+
+	<div data-role="footer" data-position="fixed">
+
+		<div data-role="navbar">
+			<ul>
+				<li><a id="pause" href="#">Pause</a></li>
+				<li><a id="stop" data-direction="reverse" href="/" data-transition="slide">Stop</a></li>
+			</ul>
+		</div>
+
+		<div data-role="fieldcontain" style="text-align: center">
+			<input type="range" style="display:none; width: 100%" name="volume" id="volume" value="60" min="0" max="100" data-highlight="true"/>
+		</div>
 	</div>
 
 </div>
