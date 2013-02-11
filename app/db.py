@@ -10,6 +10,10 @@ class DB(object):
 
 
     def update_played_song(self, artist, title):
+
+        # Do not allow empty fields
+        if artist.strip() == '' or title.strip() == '': return
+
         with self._conn as c:
             cur = c.cursor()
             cur.execute("""UPDATE played_songs
