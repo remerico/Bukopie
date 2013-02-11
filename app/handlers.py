@@ -3,28 +3,41 @@ import sockjs.tornado
 import simplejson as json
 
 import utils
-from jsonrpc import JsonRpcHandler, Recipient
+from jsonrpc import JsonRpcHandler, Recipient, JsonRpcRouter
+
+
+class Handler(object):
+    def __init__(self, application):
+        self.application = application
+        self.methods = {
+            'getStatus' : GetStatusHandler,
+            'play'      : PlayHandler,
+            'stop'      : StopHandler,
+            'setVol'    : SetVolumeHandler,
+            'pause'     : PauseHandler
+        }
+        self.router = JsonRpcRouter(application, self.methods, '/socket')
+
+        self.urls = [
+            (r"/",            IndexHandler),
+            (r"/favicon.ico", tornado.web.StaticFileHandler, {'path': 'favicon.ico'}),
+        ] + self.router.urls 
 
 
 class GetStatusHandler(JsonRpcHandler):
-    # 'getStatus'
-
     def on_execute(self, params):
-        self.respond(self.application.status)
+        self.respond(self.application.status.status)
 
 
 class PlayHandler(JsonRpcHandler):
-    # 'play'
-
     def on_execute(self, params):
 
         play_id = utils.try_int(params[0], -1)
 
         if play_id >= 0 and play_id != self.application.status['playid']:
-            if self.application.playerEnabled:
-                self.application.player.play(self.application.stations.get_id(play_id).url)
+            self.application.player.play(self.application.stations.get_id(play_id).url)
 
-            self.application.update_status({ 
+            self.application.status.update_status({ 
                 'playing' : True,
                 'playid'  : play_id,
                 'stream'  : self.application.stations.list[play_id].name if play_id >= 0 else '',
@@ -36,13 +49,10 @@ class PlayHandler(JsonRpcHandler):
 
 
 class StopHandler(JsonRpcHandler):
-    # 'stop'
-
     def on_execute(self, params):
-        if self.application.playerEnabled:
-            self.application.player.close()
+        self.application.player.close()
 
-        self.application.update_status({ 
+        self.application.status.update_status({ 
             'playing' : False, 
             'playid'  : -1,
             'stream'  : '',
@@ -54,16 +64,12 @@ class StopHandler(JsonRpcHandler):
 
 
 class SetVolumeHandler(JsonRpcHandler):
-    # 'setVol'
-
     def on_execute(self, params):
-
         percent = utils.try_int(params[0], -1)
 
         if percent >= 0:
             percent = max(0, min(100, percent))
-            if self.application.playerEnabled:
-                self.application.player.setVolume(percent)
+            self.application.player.setVolume(percent)
 
         self.application.status['volume'] = str(percent)
         self.respond(1)
@@ -71,17 +77,11 @@ class SetVolumeHandler(JsonRpcHandler):
 
 
 class PauseHandler(JsonRpcHandler):
-    # 'pause'
-
     def on_execute(self, params):
-        if self.application.playerEnabled:
-            self.application.player.pause()
+        self.application.player.pause()
 
         self.respond(1)
-
-
-
-
+        
 
 class IndexHandler(tornado.web.RequestHandler):
 

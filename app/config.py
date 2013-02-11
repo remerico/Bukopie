@@ -13,6 +13,15 @@ CONFIG_FILE = os.path.join(CONFIG_DIR, 'config.json')
 
 class Config:
 
+    default_config = {
+        'port' : 8081,
+        'stationfile' : os.path.join(CONFIG_DIR, 'stations.csv'),
+        'databasefile' : os.path.join(CONFIG_DIR, 'database.db'),
+        'cache-kb' : 160,
+        'cache-min' : 50,
+        'volume' : 25
+    }
+
     def __init__(self):
 
         if not os.path.exists(CONFIG_DIR):
@@ -25,7 +34,8 @@ class Config:
             self._keys = Config.read(CONFIG_FILE)
 
 
-    def get(self, key, default=''):
+    def get(self, key, default=None):
+        if default == None: default = Config.default_config[key]
         return self._keys[key] if key in self._keys else default
 
     def set(self, key, value, save=False):
@@ -43,7 +53,7 @@ class Config:
             cf = open(file, 'rb')
             return json.load(cf)
         except:
-            return Config.default_config()
+            return Config.default_config
         finally:
             cf.close()
 
@@ -59,14 +69,3 @@ class Config:
             return False
         finally:
             cf.close()
-
-
-    @staticmethod
-    def default_config():
-        return {
-            'port' : 8081,
-            'stationfile' : os.path.join(CONFIG_DIR, 'stations.csv'),
-            'cache-kb' : 160,
-            'cache-min' : 50,
-            'volume' : 25
-        }

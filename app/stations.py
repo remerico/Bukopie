@@ -27,19 +27,22 @@ class Stations:
 
 		try:
 			cf = open(file, 'rb')
+
+			i = 0;	
+			for row in csv.reader(cf, skipinitialspace=True):
+				if row[0].startswith('#'): continue
+				name, url = map(lambda s: s.strip(), row)
+				stations.append(StationData(i, name, url))
+				i += 1
+
+			return stations
+
 		except IOError, e:
 			print(str(e))
 			return stations
-	
-		i = 0;	
-		for row in csv.reader(cf, skipinitialspace=True):
-			if row[0].startswith('#'): continue
-			name, url = map(lambda s: s.strip(), row)
-			stations.append(StationData(i, name, url))
-			i += 1
 
-		cf.close()
-		return stations
+		finally:
+			cf.close()
 
 
 	@staticmethod
@@ -61,7 +64,5 @@ class Stations:
 			cf.close()
 
 		
-
-
 	def get_id(self, id):
 		return self.list[id];
