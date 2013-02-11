@@ -1,4 +1,5 @@
 from copy import deepcopy
+import re
 
 def try_int(data, default):
 	try:
@@ -20,3 +21,14 @@ def merge_dict(a, b):
         else:
             result[k] = deepcopy(v)
     return result
+
+def parse_track(track):
+    """ Takes a track name and try to parse it as artist and title """
+
+    split = track.split(' - ')
+    if len(split) < 2: return '', ''
+
+    artist = split[0]
+    title = re.sub("\s*\([^)]*\)", '', split[len(split) - 1]).strip()
+
+    return artist, title

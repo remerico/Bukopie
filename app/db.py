@@ -11,15 +11,18 @@ class DB(object):
 
     def update_played_song(self, artist, title):
         with self._conn as c:
-            c.execute("""UPDATE played_songs
+            cur = c.cursor()
+            cur.execute("""UPDATE played_songs
                            SET    play_count  = play_count + 1,
                                   last_played = ?
                            WHERE  artist = ?
                            AND    title  = ?""", 
                            (int(time.time()), artist, title))
 
+
             # Update failed, insert new entry instead
-            if c.rowcount == 0:
+            if cur.rowcount == 0:
+                print("SQL : INSERT song -> " + artist + "  " + title)
                 c.execute("""INSERT INTO played_songs
                                 (artist, title, play_count, last_played, favorite)
                                VALUES (?, ?, ?, ?, ?)""",

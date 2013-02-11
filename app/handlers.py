@@ -37,7 +37,7 @@ class PlayHandler(JsonRpcHandler):
         if play_id >= 0 and play_id != self.application.status['playid']:
             self.application.player.play(self.application.stations.get_id(play_id).url)
 
-            self.application.status.update_status({ 
+            self.application.status.update({ 
                 'playing' : True,
                 'playid'  : play_id,
                 'stream'  : self.application.stations.list[play_id].name if play_id >= 0 else '',
@@ -52,7 +52,7 @@ class StopHandler(JsonRpcHandler):
     def on_execute(self, params):
         self.application.player.close()
 
-        self.application.status.update_status({ 
+        self.application.status.update({ 
             'playing' : False, 
             'playid'  : -1,
             'stream'  : '',

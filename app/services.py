@@ -2,10 +2,10 @@
 
 from tornado import httpclient
 from tornado.httpclient import AsyncHTTPClient, HTTPRequest
-import re
 import urllib
 import simplejson as json
 import md5
+import utils
 
 lastfm_host = 'ws.audioscrobbler.com'
 lastfm_sub = '/2.0/'
@@ -26,7 +26,8 @@ class Services(object):
     def get_track_info(self, track, callback):
         """ Get some info about the specified track """
 
-        artist, title = self._parseTrack(track)
+        artist, title = utils.parse_track(track)
+        print('Artist: ' + artist + '    Track: ' + title)
 
         if artist and title:
             url = 'http://ws.audioscrobbler.com/2.0/?' + \
@@ -45,20 +46,6 @@ class Services(object):
 
         else:
             callback({ 'cover' : '' })
-
-
-    def _parseTrack(self, track):
-        """ Takes a track name and try to parse it as artist and title """
-
-        split = track.split(' - ')
-        if len(split) < 2: return '', ''
-
-        artist = split[0]
-        title = re.sub("\s*\([^)]*\)", '', split[len(split) - 1]).strip()
-
-        print('Artist: ' + artist + '    Track: ' + title)
-
-        return artist, title
 
 
     def _handleTrackinfo(self, response, callback):
