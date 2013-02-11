@@ -39,3 +39,6 @@ class Status:
 
     def __getitem__(self, index):
         return self.status[index]
+
+    def __setitem__(self, index, value):
+        self.status[index] = value
