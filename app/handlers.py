@@ -14,7 +14,8 @@ class Handler(object):
             'play'      : PlayHandler,
             'stop'      : StopHandler,
             'setVol'    : SetVolumeHandler,
-            'pause'     : PauseHandler
+            'pause'     : PauseHandler,
+            'getHistory': GetHistoryHandler,
         }
         self.router = JsonRpcRouter(application, self.methods, '/socket')
 
@@ -79,8 +80,17 @@ class SetVolumeHandler(JsonRpcHandler):
 class PauseHandler(JsonRpcHandler):
     def on_execute(self, params):
         self.application.player.pause()
-
         self.respond(1)
+
+
+class GetHistoryHandler(JsonRpcHandler):
+    def on_execute(self, params):
+        data = self.application.db.get_listening_history()
+        res = []
+        for i in data:
+            res.append({ 'artist' : i[0], 'title' : i[1] })
+
+        self.respond(res)
         
 
 class IndexHandler(tornado.web.RequestHandler):

@@ -39,14 +39,25 @@ class DB(object):
                          WHERE artist = ? AND title  = ?""",
                            (1 if favorite else 0, artist, title)) 
 
+    def get_listening_history(self, limit=20):
+        with self._conn as c:
+            cur = c.cursor()
+            cur.execute("""SELECT artist, title
+                         FROM played_songs
+                         ORDER BY last_played DESC
+                         LIMIT ?""", (limit,) )
+
+            return cur.fetchall()
+
 
     def is_favorite_song(self, artist, title):
         with self._conn as c:
-            c.execute("""SELECT favorite FROM played_songs
+            cur = c.cursor()
+            cur.execute("""SELECT favorite FROM played_songs
                          WHERE artist = ? AND title  = ?""",
                             (artist, title))
 
-            res = c.fetchone()
+            res = cur.fetchone()
 
             if res:
                 return res[0] == 1

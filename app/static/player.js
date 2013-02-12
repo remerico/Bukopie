@@ -131,6 +131,12 @@
             }, this));
         };
 
+        App.prototype.getHistory = function() {
+            this.socket.send('getHistory', [], $.proxy(function(result, error) {
+                $(this).trigger('handlehistory', [result]);
+            }, this));
+        }
+
         App.prototype.setVolume = function(percent) {
             //if (percent != this.status.player.volume)
             this.socket.send('setVol', [percent]);
@@ -153,14 +159,79 @@
             this.app = app;
 
             this.t_stationList   = '#stationlist';
+            this.t_historyList   = '#historylist';
             this.t_playingStream = '#nowplaying-button';
             this.selectedStream  = -1;
 
-            $(app).on('handlestatus', $.proxy(this.refresh, this));
+            $(app)
+                .on('handlestatus', $.proxy(this.refresh, this))
+                .on('handlehistory', $.proxy(this.refreshHistory, this));
 
             $(document)
                 .on('pageinit',selector, $.proxy(this.init, this))
-                .on('pagebeforeshow', selector, $.proxy(this.pageBeforeShow, this));
+                .on('pagebeforeshow', selector, $.proxy(function() {
+                    this.refresh('', this.app.status);
+                }, this));
+
+            this.registerMenuEvents();
+
+        }
+
+        IndexView.prototype.registerMenuEvents = function() {
+
+            var menuStatus;
+
+            $("#page-index #menu-button").live("click", function(){
+                if(menuStatus != true){
+                $(".ui-page-active").animate({
+                    marginLeft: "165px",
+                  }, 300, function(){menuStatus = true});
+                  return false;
+                  } else {
+                    $(".ui-page-active").animate({
+                    marginLeft: "0px",
+                  }, 300, function(){menuStatus = false});
+                    return false;
+                  }
+            });
+
+             $('#page-index').live("swipeleft", function(){
+                if (menuStatus){
+                $(".ui-page-active").animate({
+                    marginLeft: "0px",
+                  }, 300, function(){menuStatus = false});
+                  }
+            });
+         
+            $('#page-index').live("swiperight", function(){
+                if (!menuStatus){
+                $(".ui-page-active").animate({
+                    marginLeft: "165px",
+                  }, 300, function(){menuStatus = true});
+                  }
+            });
+
+            $("#menu li a").live("click", function(){
+                $("#menu li").removeClass('active');
+                $(this).parent().addClass('active');
+            });
+
+
+            $("#menu #menu-stations").live("click", function() {
+                $("#page-index .subpage").attr("hidden", true);
+                $("#page-index #subpage-stations").attr("hidden", false);
+            });
+
+            $("#menu #menu-history").live("click", $.proxy(function() {
+               $("#page-index .subpage").attr("hidden", true); 
+               $("#page-index #subpage-history").attr("hidden", false);
+               this.app.getHistory();
+            }, this));
+
+            $("#menu #menu-settings").live("click", function() {
+               $("#page-index .subpage").attr("hidden", true); 
+               $("#page-index #subpage-settings").attr("hidden", false);
+            });
 
         }
 
@@ -172,10 +243,6 @@
                 _this.app.play($(this).attr('id'));
                 $.mobile.changePage( "#nowplaying", { transition: "slide"} );
             });
-        };
-
-        IndexView.prototype.pageBeforeShow = function() {
-            this.refresh('', this.app.status);
         };
 
         IndexView.prototype.refresh = function(event, status) {
@@ -193,6 +260,17 @@
             }
 
         };
+
+        IndexView.prototype.refreshHistory = function(event, data) {
+            var items = [];
+
+            $.each(data, function(key, val) {
+                items.push('<li>' + val.artist + ' - ' + val.title + '</li>');
+            });
+
+            $(this.t_historyList).html(items.join(''))
+            $(this.t_historyList).listview('refresh');
+        }
 
         IndexView.prototype.refreshStations = function(stations) {
 
@@ -254,7 +332,9 @@
 
             $(document)
                 .on('pageinit', selector, $.proxy(this.init, this))
-                .on('pagebeforeshow', selector, $.proxy(this.pageBeforeShow, this));
+                .on('pagebeforeshow', selector, $.proxy(function() {
+                    this.refresh('', this.app.status);
+                }, this));
 
         }
 
@@ -300,10 +380,6 @@
             });
 
         }
-        
-        NowPlayingView.prototype.pageBeforeShow = function() {
-            this.refresh('', this.app.status);
-        }
 
         NowPlayingView.prototype.refresh = function(event, status) {
 
@@ -313,10 +389,6 @@
                 this.station.html(status.stream);
             }
             if (!Util.isNull(status.player)) {
-
-                // if (status.player.station != '') {
-                //     this.station.html(status.player.station);
-                // }
                 this.connection.html(status.player.connection);
                 this.stream.html(status.player.stream);
 

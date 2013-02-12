@@ -2,18 +2,52 @@
 
 {% block content %}
 
+<div id="menu">
+<h3>Menu</h3>
+    <ul>
+    	<li><a id="menu-nowplaying" href="#">Now Playing</a></li>
+        <li class="active"><a id="menu-stations" href="#">Stations</a></li>
+        <li><a id="menu-history" href="#">History</a></li>
+        <li><a id="menu-settings" href="#">Settings</a></li>
+    </ul>
+</div>
+
 <div data-role="page" id="page-index">
 
-	<div data-role="header" data-position="fixed">
-		<a href="#" data-role="button" data-icon="gear" data-iconpos="notext">Settings</a>
-		<h1>Bukopie</h1>
-		<a href="#nowplaying" id="nowplaying-button" data-transition="slide" data-icon="arrow-r" class="ui-btn-right">Now Playing</a>
+	<div class="subpage" id="subpage-stations">		
+		<div data-role="header">
+			<a href="#" data-role="button" data-icon="grid" id="menu-button">Menu</a>
+			<h1>Bukopie</h1>
+			<a href="#nowplaying" id="nowplaying-button" data-transition="slide" data-icon="arrow-r" class="ui-btn-right">Now Playing</a>
+		</div>
+
+		<div data-role="content">	
+			<ul id="stationlist" data-role="listview" data-theme="c" data-filter="true">
+			</ul>
+		</div>
 	</div>
 
-	<div data-role="content">	
-		<ul id="stationlist" data-role="listview" data-theme="c" data-filter="true">
-		</ul>
+
+	<div class="subpage" id="subpage-history" hidden="true">
+		<div data-role="header">
+			<a href="#" data-role="button" data-icon="grid" id="menu-button">Menu</a>
+			<h1>Listening History</h1>
+		</div>
+
+		<div data-role="content">	
+			<ul id="historylist" data-role="listview" data-theme="c" data-filter="true">
+			</ul>
+		</div>
 	</div>
+
+
+	<div class="subpage" id="subpage-settings" hidden="true">
+		<div data-role="header">
+			<a href="#" data-role="button" data-icon="grid" id="menu-button">Menu</a>
+			<h1>Settings</h1>
+		</div>
+	</div>
+
 
 </div>
 
