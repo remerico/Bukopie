@@ -217,21 +217,29 @@
             });
 
 
+
             $("#menu #menu-stations").live("click", function() {
-                $("#page-index .subpage").attr("hidden", true);
+                hideMenu();
                 $("#page-index #subpage-stations").attr("hidden", false);
             });
 
             $("#menu #menu-history").live("click", $.proxy(function() {
-               $("#page-index .subpage").attr("hidden", true); 
+               hideMenu();
                $("#page-index #subpage-history").attr("hidden", false);
                this.app.getHistory();
             }, this));
 
             $("#menu #menu-settings").live("click", function() {
-               $("#page-index .subpage").attr("hidden", true); 
+               hideMenu();
                $("#page-index #subpage-settings").attr("hidden", false);
             });
+
+            function hideMenu() {
+                $("#page-index .subpage").attr("hidden", true); 
+                menuStatus = false;
+                $(".ui-page-active").animate({ marginLeft: "0px",
+                  }, 300, function(){menuStatus = false});
+            }
 
         }
 
@@ -265,7 +273,9 @@
             var items = [];
 
             $.each(data, function(key, val) {
-                items.push('<li>' + val.artist + ' - ' + val.title + '</li>');
+                if (val.artist != ''  && val.title != '') {
+                    items.push('<li><h3>' + val.artist + '</h3><p>' + val.title + '</p></li>');
+                }
             });
 
             $(this.t_historyList).html(items.join(''))
