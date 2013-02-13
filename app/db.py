@@ -9,7 +9,7 @@ class DB(object):
         self.init_database(file)
 
 
-    def update_played_song(self, artist, title, station=''):
+    def update_played_song(self, artist, title, station='', cover=''):
 
         # Do not allow empty fields
         if artist.strip() == '' or title.strip() == '': return
@@ -19,19 +19,20 @@ class DB(object):
             cur.execute("""UPDATE played_songs
                            SET    play_count  = play_count + 1,
                                   last_played = ?,
-                                  station = ?
+                                  station = ?,
+                                  cover = ?
                            WHERE  artist = ?
                            AND    title  = ?""", 
-                           (int(time.time()), station, artist, title))
+                           (int(time.time()), station, cover, artist, title))
 
 
             # Update failed, insert new entry instead
             if cur.rowcount == 0:
                 print("SQL : INSERT song -> " + artist + "  " + title)
                 c.execute("""INSERT INTO played_songs
-                                (artist, title, station, play_count, last_played, favorite)
-                               VALUES (?, ?, ?, ?, ?, ?)""",
-                               (artist, title, station, 1, int(time.time()), 0))
+                                (artist, title, station, cover, play_count, last_played, favorite)
+                               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                               (artist, title, station, cover, 1, int(time.time()), 0))
 
 
     def set_favorite_song(self, artist, title, favorite):
@@ -40,10 +41,10 @@ class DB(object):
                          WHERE artist = ? AND title  = ?""",
                            (1 if favorite else 0, artist, title)) 
 
-    def get_listening_history(self, limit=50):
+    def get_listening_history(self, limit=5):
         with self._conn as c:
             cur = c.cursor()
-            cur.execute("""SELECT artist, title
+            cur.execute("""SELECT artist, title, station, cover
                          FROM played_songs
                          ORDER BY last_played DESC
                          LIMIT ?""", (limit,) )
@@ -73,11 +74,15 @@ class DB(object):
                          artist TEXT, 
                          title TEXT,
                          station TEXT,
+                         cover TEXT,
                          play_count INTEGER, 
                          last_played INTEGER, 
                          favorite INTEGER)""")
 
             try: c.execute("ALTER TABLE played_songs ADD station")
+            except: pass
+
+            try: c.execute("ALTER TABLE played_songs ADD cover")
             except: pass
 
             c.execute("""CREATE UNIQUE INDEX IF NOT EXISTS played_songs_idx 

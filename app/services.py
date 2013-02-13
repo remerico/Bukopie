@@ -1,5 +1,4 @@
 # Last.FM Web services
-import utils
 import pylast
 import config
 
@@ -13,11 +12,8 @@ class Services(object):
         self.network = pylast.LastFMNetwork(api_key = self.key, api_secret = self.secret)
         self.network.enable_caching(file_path=config.CONFIG_DIR+'/lastfmcache')
 
-    def get_track_info(self, track):
+    def get_track_info(self, artist, title):
         """ Get some info about the specified track """
-
-        artist, title = utils.parse_track(track)
-        print('Artist: ' + artist + '    Track: ' + title)
 
         try:
             cover = self.network.get_album(artist, title).get_cover_image() or ''

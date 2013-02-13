@@ -733,7 +733,7 @@ class _Request(object):
         headers = {
             "Content-type": "application/x-www-form-urlencoded",
             'Accept-Charset': 'utf-8',
-            'User-Agent': "pylast" + '/' + __version__
+            'User-Agent': "bukopie" + '/' + __version__
             }        
         
         (HOST_NAME, HOST_SUBDIR) = self.network.ws_server
@@ -3591,7 +3591,7 @@ class _ScrobblerRequest(object):
         headers = {
             "Content-type": "application/x-www-form-urlencoded",
             "Accept-Charset": "utf-8",
-            "User-Agent": "pylast" + "/" + __version__,
+            "User-Agent": "bukopie" + "/" + __version__,
             "HOST": self.hostname
             }
         

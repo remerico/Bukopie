@@ -272,11 +272,11 @@
         IndexView.prototype.refreshHistory = function(event, data) {
             var items = [];
 
-            $.each(data, function(key, val) {
+            $.each(data, $.proxy(function(key, val) {
                 if (val.artist != ''  && val.title != '') {
-                    items.push('<li><h3>' + val.artist + '</h3><p>' + val.title + '</p></li>');
+                    items.push('<li><img src="' + val.cover + '" /><h3>' + val.title + '</h3><p>' + val.artist + '</p></li>');
                 }
-            });
+            }, this));
 
             $(this.t_historyList).html(items.join(''))
             $(this.t_historyList).listview('refresh');

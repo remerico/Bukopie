@@ -88,7 +88,7 @@ class GetHistoryHandler(JsonRpcHandler):
         data = self.application.db.get_listening_history()
         res = []
         for i in data:
-            res.append({ 'artist' : i[0], 'title' : i[1] })
+            res.append({ 'artist' : i[0], 'title' : i[1], 'station' : i[2], 'cover' : i[3] })
 
         self.respond(res)
         
