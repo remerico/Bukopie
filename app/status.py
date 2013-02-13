@@ -28,22 +28,22 @@ class Status:
         self.handler.router.notify('status', values)
 
 
-    # Event handlers
+    ''' Called by player object whenever its status changes '''
     def handle_player_status(self, key, value):
 
         def callback():
             self.update({ 'player' : { key : value } })
 
             if key == 'stream':
-                self.services.get_track_info(value, self.handle_track_info)
+                trackinfo = self.services.get_track_info(value)
+                self.update({ 'trackinfo' : trackinfo })
 
                 artist, title = utils.parse_track(value)
-                self.db.update_played_song(artist, title)
+                self.db.update_played_song(artist, title, self.status['player']['station'])
 
+        ''' Since this event is called from the player thread,
+            call the rest of the code from the main thread ''' 
         self.ioloop.add_callback(callback)
-
-    def handle_track_info(self, trackinfo):
-        self.update({ 'trackinfo' : trackinfo })
 
 
     def __getitem__(self, index):

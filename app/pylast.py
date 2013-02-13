@@ -28,14 +28,11 @@ import hashlib
 from xml.dom import minidom
 import xml.dom
 import time
-import shelve
+import sqlite3
 import tempfile
 import sys
 import collections
 import warnings
-
-def _deprecation_warning(message):
-    warnings.warn(message, DeprecationWarning)
 
 if sys.version_info[0] == 3:
     from http.client import HTTPConnection
@@ -235,35 +232,6 @@ class _Network(object):
         
         return Tag(name, self)
     
-    def get_scrobbler(self, client_id, client_version):
-        """
-            Returns a Scrobbler object used for submitting tracks to the server
-            
-            Quote from http://www.last.fm/api/submissions:
-            ========
-            Client identifiers are used to provide a centrally managed database of 
-            the client versions, allowing clients to be banned if they are found to 
-            be behaving undesirably. The client ID is associated with a version 
-            number on the server, however these are only incremented if a client is 
-            banned and do not have to reflect the version of the actual client application.
-
-            During development, clients which have not been allocated an identifier should 
-            use the identifier tst, with a version number of 1.0. Do not distribute code or
-            client implementations which use this test identifier. Do not use the identifiers
-            used by other clients.
-            =========
-            
-            To obtain a new client identifier please contact:
-                * Last.fm: submissions@last.fm
-                * # TODO: list others
-            
-            ...and provide us with the name of your client and its homepage address. 
-        """
-        
-        _deprecation_warning("Use _Network.scrobble(...), _Network.scrobble_many(...), and Netowrk.update_now_playing(...) instead")
-        
-        return Scrobbler(self, client_id, client_version)
-    
     def _get_language_domain(self, domain_language):
         """
             Returns the mapped domain name of the network to a DOMAIN_* value
@@ -360,7 +328,7 @@ class _Network(object):
         if not file_path:
             file_path = tempfile.mktemp(prefix="pylast_tmp_")
         
-        self.cache_backend = _ShelfCacheBackend(file_path)
+        self.cache_backend = _SQLiteCacheBackend(file_path)
             
     def disable_caching(self):
         """Disables all caching features."""
@@ -584,29 +552,6 @@ class LastFMNetwork(_Network):
     def __str__(self):
         return "LastFM Network"
 
-def get_lastfm_network(api_key="", api_secret="", session_key = "", username = "", password_hash = ""):
-    """
-    Returns a preconfigured _Network object for Last.fm
-    
-    api_key: a provided API_KEY
-    api_secret: a provided API_SECRET
-    session_key: a generated session_key or None
-    username: a username of a valid user
-    password_hash: the output of pylast.md5(password) where password is the user's password
-    
-    if username and password_hash were provided and not session_key, session_key will be
-    generated automatically when needed.
-            
-    Either a valid session_key or a combination of username and password_hash must be present for scrobbling.
-    
-    Most read-only webservices only require an api_key and an api_secret, see about obtaining them from:
-    http://www.last.fm/api/account
-    """
-    
-    _deprecation_warning("Create a LastFMNetwork object instead")
-    
-    return LastFMNetwork(api_key, api_secret, session_key, username, password_hash)
-
 class LibreFMNetwork(_Network):
     """
     A preconfigured _Network object for Libre.fm
@@ -667,37 +612,34 @@ class LibreFMNetwork(_Network):
     def __str__(self):
         return "Libre.fm Network"
 
-def get_librefm_network(api_key="", api_secret="", session_key = "", username = "", password_hash = ""):
-    """
-    Returns a preconfigured _Network object for Libre.fm
-    
-    api_key: a provided API_KEY
-    api_secret: a provided API_SECRET
-    session_key: a generated session_key or None
-    username: a username of a valid user
-    password_hash: the output of pylast.md5(password) where password is the user's password
-    
-    if username and password_hash were provided and not session_key, session_key will be
-    generated automatically when needed.
-    """
-    
-    _deprecation_warning("DeprecationWarning: Create a LibreFMNetwork object instead")
-    
-    return LibreFMNetwork(api_key, api_secret, session_key, username, password_hash)
-
-class _ShelfCacheBackend(object):
+class _SQLiteCacheBackend(object):
     """Used as a backend for caching cacheable requests."""
     def __init__(self, file_path = None):
-        self.shelf = shelve.open(file_path)
+        self.conn = sqlite3.connect(file_path)
+        self.init()
+
+    def init(self):
+        with self.conn as c:
+            c.execute("""CREATE TABLE IF NOT EXISTS requests
+                (id INTEGER PRIMARY KEY, key TEXT, value TEXT, timestamp INTEGER)""")
+            c.execute("""CREATE UNIQUE INDEX IF NOT EXISTS requests_idx 
+                ON requests(key)""")
     
     def get_xml(self, key):
-        return self.shelf[key]
+        with self.conn as c:
+            cur = c.cursor()
+            cur.execute('SELECT value from requests WHERE key = ?', (key,))
+
+        res = cur.fetchone()
+        return res[0] if res else None
     
     def set_xml(self, key, xml_string):
-        self.shelf[key] = xml_string
+        with self.conn as c:
+            c.execute('INSERT OR REPLACE INTO requests (key, value) VALUES (?, ?)',
+                (key, xml_string))
     
     def has_key(self, key):
-        return key in self.shelf.keys()
+        return self.get_xml(key) is not None
     
 class _Request(object):
     """Representing an abstract web service operation."""
@@ -761,17 +703,21 @@ class _Request(object):
     
     def _get_cached_response(self):
         """Returns a file object of the cached response."""
-        
-        if not self._is_cached():
+
+        response = self.cache.get_xml(self._get_cache_key())
+        print('Cache ? ' + str(response is not None))
+
+        if not response:
             response = self._download_response()
             self.cache.set_xml(self._get_cache_key(), response)
         
-        return self.cache.get_xml(self._get_cache_key())
+        return response
     
     def _is_cached(self):
         """Returns True if the request is already in cache."""
-        
-        return self.cache.has_key(self._get_cache_key())
+        c = self.cache.has_key(self._get_cache_key())
+        print('Cache ? ' + str(c))
+        return c
         
     def _download_response(self):
         """Returns a response body string from the server."""
@@ -3680,133 +3626,3 @@ class _ScrobblerRequest(object):
             reason = status_line[status_line.find("FAILED ")+len("FAILED "):]
             raise ScrobblingError(reason)
     
-class Scrobbler(object):
-    """A class for scrobbling tracks to Last.fm"""
-    
-    session_id = None
-    nowplaying_url = None
-    submissions_url = None
-    
-    def __init__(self, network, client_id, client_version):
-        self.client_id = client_id
-        self.client_version = client_version
-        self.username = network.username
-        self.password = network.password_hash
-        self.network = network
-    
-    def _do_handshake(self):
-        """Handshakes with the server"""
-        
-        timestamp = str(int(time.time()))
-        
-        if self.password and self.username:
-            token = md5(self.password + timestamp)
-        elif self.network.api_key and self.network.api_secret and self.network.session_key:
-            if not self.username:
-                self.username = self.network.get_authenticated_user().get_name()
-            token = md5(self.network.api_secret + timestamp)
-        
-        params = {"hs": "true", "p": "1.2.1", "c": self.client_id,
-            "v": self.client_version, "u": self.username, "t": timestamp,
-            "a": token}
-        
-        if self.network.session_key and self.network.api_key:
-            params["sk"] = self.network.session_key
-            params["api_key"] = self.network.api_key
-        
-        server = self.network.submission_server
-        response = _ScrobblerRequest(server, params, self.network, "GET").execute().split("\n")
-        
-        self.session_id = response[1]
-        self.nowplaying_url = response[2]
-        self.submissions_url = response[3]
-    
-    def _get_session_id(self, new = False):
-        """Returns a handshake. If new is true, then it will be requested from the server
-        even if one was cached."""
-        
-        if not self.session_id or new:
-            self._do_handshake()
-        
-        return self.session_id
-    
-    def report_now_playing(self, artist, title, album = "", duration = "", track_number = "", mbid = ""):
-        
-        _deprecation_warning("DeprecationWarning: Use Netowrk.update_now_playing(...) instead")
-        
-        params = {"s": self._get_session_id(), "a": artist, "t": title,
-            "b": album, "l": duration, "n": track_number, "m": mbid}
-        
-        try:
-            _ScrobblerRequest(self.nowplaying_url, params, self.network).execute()
-        except BadSessionError:
-            self._do_handshake()
-            self.report_now_playing(artist, title, album, duration, track_number, mbid)
-    
-    def scrobble(self, artist, title, time_started, source, mode, duration, album="", track_number="", mbid=""):
-        """Scrobble a track. parameters:
-            artist: Artist name.
-            title: Track title.
-            time_started: UTC timestamp of when the track started playing.
-            source: The source of the track
-                SCROBBLE_SOURCE_USER: Chosen by the user (the most common value, unless you have a reason for choosing otherwise, use this).
-                SCROBBLE_SOURCE_NON_PERSONALIZED_BROADCAST: Non-personalised broadcast (e.g. Shoutcast, BBC Radio 1).
-                SCROBBLE_SOURCE_PERSONALIZED_BROADCAST: Personalised recommendation except Last.fm (e.g. Pandora, Launchcast).
-                SCROBBLE_SOURCE_LASTFM: ast.fm (any mode). In this case, the 5-digit recommendation_key value must be set.
-                SCROBBLE_SOURCE_UNKNOWN: Source unknown.
-            mode: The submission mode
-                SCROBBLE_MODE_PLAYED: The track was played.
-                SCROBBLE_MODE_LOVED: The user manually loved the track (implies a listen)
-                SCROBBLE_MODE_SKIPPED: The track was skipped (Only if source was Last.fm)
-                SCROBBLE_MODE_BANNED: The track was banned (Only if source was Last.fm)
-            duration: Track duration in seconds.
-            album: The album name.
-            track_number: The track number on the album.
-            mbid: MusicBrainz ID.
-        """
-        
-        _deprecation_warning("DeprecationWarning: Use Network.scrobble(...) instead")
-        
-        params = {"s": self._get_session_id(), "a[0]": _string(artist), "t[0]": _string(title),
-            "i[0]": str(time_started), "o[0]": source, "r[0]": mode, "l[0]": str(duration),
-            "b[0]": _string(album), "n[0]": track_number, "m[0]": mbid}
-        
-        _ScrobblerRequest(self.submissions_url, params, self.network).execute()
-    
-    def scrobble_many(self, tracks):
-        """
-            Scrobble several tracks at once.
-            
-            tracks: A sequence of a sequence of parameters for each trach. The order of parameters
-                is the same as if passed to the scrobble() method.
-        """
-        
-        _deprecation_warning("DeprecationWarning: Use Network.scrobble_many(...) instead")
-        
-        remainder = []
-        
-        if len(tracks) > 50:
-            remainder = tracks[50:]
-            tracks = tracks[:50]
-        
-        params = {"s": self._get_session_id()}
-        
-        i = 0
-        for t in tracks:
-            _pad_list(t, 9, "")
-            params["a[%s]" % str(i)] = _string(t[0])
-            params["t[%s]" % str(i)] = _string(t[1])
-            params["i[%s]" % str(i)] = str(t[2])
-            params["o[%s]" % str(i)] = t[3]
-            params["r[%s]" % str(i)] = t[4]
-            params["l[%s]" % str(i)] = str(t[5])
-            params["b[%s]" % str(i)] = _string(t[6])
-            params["n[%s]" % str(i)] = t[7]
-            params["m[%s]" % str(i)] = t[8]
-            
-            i += 1
-        
-        _ScrobblerRequest(self.submissions_url, params, self.network).execute()
-        
-        if remainder:
-            self.scrobble_many(remainder)
