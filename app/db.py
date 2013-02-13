@@ -39,7 +39,7 @@ class DB(object):
                          WHERE artist = ? AND title  = ?""",
                            (1 if favorite else 0, artist, title)) 
 
-    def get_listening_history(self, limit=20):
+    def get_listening_history(self, limit=50):
         with self._conn as c:
             cur = c.cursor()
             cur.execute("""SELECT artist, title
