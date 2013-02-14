@@ -14,8 +14,13 @@ class DB(object):
         # Do not allow empty fields
         if artist.strip() == '' or title.strip() == '': return
 
+        p_artist, p_title = self.get_last_played_song()
+        if p_artist == artist and p_title == title:
+            return
+
         with self._conn as c:
             cur = c.cursor()
+
             cur.execute("""INSERT OR IGNORE INTO songs (artist, title, cover)
                             VALUES (?, ?, ?)""", (artist, title, cover))
 
@@ -50,6 +55,17 @@ class DB(object):
                             (station_id, timestamp)
                             VALUES (?, ?)""",
                             (station_id, timestamp))
+
+    def get_last_played_song(self):
+        with self._conn as c:
+            cur = c.cursor()
+            cur.execute("""SELECT artist, title from view_song_history
+                    ORDER BY timestamp DESC LIMIT 1""")
+
+            res = cur.fetchone()
+
+            if res: return res[0], res[1]
+            else: return None, None
 
 
     def set_favorite_song(self, artist, title, favorite):
