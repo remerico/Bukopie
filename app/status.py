@@ -42,7 +42,7 @@ class Status:
                 self.update({ 'trackinfo' : trackinfo })
 
                 artist, title = utils.parse_track(value)
-                self.db.update_played_song(artist, title, self.status['player']['station'], trackinfo['cover'])
+                self.db.add_played_song(artist, title, self.status['stream'], trackinfo['cover'])
 
         ''' Since this event is called from the player thread,
             call the rest of the code from the main thread ''' 

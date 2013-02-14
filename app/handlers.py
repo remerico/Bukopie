@@ -36,15 +36,20 @@ class PlayHandler(JsonRpcHandler):
         play_id = utils.try_int(params[0], -1)
 
         if play_id >= 0 and play_id != self.application.status['playid']:
-            self.application.player.play(self.application.stations.get_id(play_id).url)
+
+            station = self.application.stations.get_id(play_id)
+
+            self.application.player.play(station.url)
 
             self.application.status.update({ 
                 'playing' : True,
                 'playid'  : play_id,
-                'stream'  : self.application.stations.list[play_id].name if play_id >= 0 else '',
+                'stream'  : station.name,
                 'player'  : self.application.player.log.get_status(),
                 'trackinfo' : {}
             })
+
+            self.application.db.add_played_station(station.name, station.url)
 
         self.respond(1)
 
