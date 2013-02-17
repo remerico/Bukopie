@@ -38,11 +38,16 @@ class Status:
                 artist, title = utils.parse_track(value)
                 print('Artist: ' + artist + '    Track: ' + title)
 
-                trackinfo = self.services.get_track_info(artist, title)
-                self.update({ 'trackinfo' : trackinfo })
+                cover = self.services.get_cover(artist, title)
+                favorite = self.db.is_favorite_song(artist, title)
+
+                self.update({ 'trackinfo' : {
+                        'cover' : cover,
+                        'favorite' : favorite
+                    }})
 
                 artist, title = utils.parse_track(value)
-                self.db.add_played_song(artist, title, self.status['stream'], trackinfo['cover'])
+                self.db.add_played_song(artist, title, self.status['stream'], cover)
 
         ''' Since this event is called from the player thread,
             call the rest of the code from the main thread ''' 

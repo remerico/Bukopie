@@ -3,45 +3,61 @@
 {% block content %}
 
 <div id="menu">
-<h3>Menu</h3>
+	<h3>Menu</h3>
     <ul>
-    	<li><a id="menu-nowplaying" href="#">Now Playing</a></li>
-        <li class="active"><a id="menu-stations" href="#">Stations</a></li>
-        <li><a id="menu-history" href="#">History</a></li>
-        <li><a id="menu-settings" href="#">Settings</a></li>
+    	<li><a href="#nowplaying">Now Playing</a></li>
+        <li class="active"><a href="#stations">Stations</a></li>
+        <li><a href="#history">History</a></li>
+        <li><a href="#favorites">Favorites</a></li>
+        <li><a href="#settings">Settings</a></li>
     </ul>
 </div>
 
+
 <div data-role="page" id="page-index">
 
-	<div class="subpage" id="subpage-stations">		
+	<div data-role="subpage" id="stations">		
+
 		<div data-role="header">
 			<a href="#" data-role="button" data-icon="grid" id="menu-button">Menu</a>
-			<h1>Bukopie</h1>
-			<a href="#nowplaying" id="nowplaying-button" data-transition="slide" data-icon="arrow-r" class="ui-btn-right">Now Playing</a>
+			<h1>Stations</h1>
 		</div>
 
 		<div data-role="content">	
 			<ul id="stationlist" data-role="listview" data-theme="c" data-filter="true">
 			</ul>
 		</div>
+
 	</div>
 
 
-	<div class="subpage" id="subpage-history" hidden="true">
+	<div data-role="subpage" id="history">
 		<div data-role="header">
 			<a href="#" data-role="button" data-icon="grid" id="menu-button">Menu</a>
 			<h1>Listening History</h1>
 		</div>
 
 		<div data-role="content">	
-			<ul id="historylist" data-role="listview" data-theme="c" data-filter="true">
+			<ul id="historylist" data-role="listview">
 			</ul>
 		</div>
 	</div>
 
 
-	<div class="subpage" id="subpage-settings" hidden="true">
+	<div data-role="subpage" id="favorites">
+		<div data-role="header">
+			<a href="#" data-role="button" data-icon="grid" id="menu-button">Menu</a>
+			<h1>Favorites</h1>
+		</div>
+
+		<div data-role="content">	
+			<ul id="favoritelist" data-role="listview">
+			</ul>
+		</div>
+	</div>
+
+
+	<div data-role="subpage" id="settings">
 		<div data-role="header">
 			<a href="#" data-role="button" data-icon="grid" id="menu-button">Menu</a>
 			<h1>Settings</h1>
@@ -49,43 +65,47 @@
 	</div>
 
 
+	<div data-role="subpage" id="nowplaying">
+		<div data-role="header">
+			<a href="#" data-role="button" data-icon="grid" id="menu-button">Menu</a>
+			<h1>Now Playing</h1>
+		</div>
+
+		<div data-role="content">	
+
+			<div style="float:right">
+	            <a id="button-favsong" href="#" data-role="button" data-theme="c" data-icon="star" data-iconpos="notext"></a>
+	        </div>
+
+			<table id="track-info" style="text-align: center; width: 100%">
+				<tr><td><span id="stream" style="font-weight: bold"></span></td></tr>
+				<tr><td><span id="station"></span></td></tr>
+				<tr><td><span id="status"></span></td></tr>
+			</table>
+
+			<div style="text-align: center; width: 100%">
+				<img id="cover" src="" />
+			</div>
+
+		</div>
+
+		<div data-role="footer" data-position="fixed">
+
+			<div data-role="navbar">
+				<ul>
+					<li><a id="pause" href="#">Pause</a></li>
+					<li><a id="stop" data-direction="reverse" href="/" data-transition="slide">Stop</a></li>
+				</ul>
+			</div>
+
+			<div data-role="fieldcontain" style="text-align: center">
+				<input type="range" style="display:none; width: 100%" name="volume" id="volume" value="60" min="0" max="100" data-highlight="true"/>
+			</div>
+		</div>
+
+	</div>
+
 </div>
 
-
-<div data-role="page" id="nowplaying">
-
-	<div data-role="header" data-position="fixed">
-		<a data-direction="reverse" href="/" data-transition="slide" data-icon="arrow-l">Back</a>
-		<h1>Now Playing</h1>
-	</div>
-
-	<div data-role="content">	
-		<table id="track-info" style="text-align: center; width: 100%">
-			<tr><td><span id="stream" style="font-weight: bold"></span></td></tr>
-			<tr><td><span id="station"></span></td></tr>
-			<tr><td><span id="status"></span></td></tr>
-		</table>
-
-		<div style="text-align: center; width: 100%">
-			<img id="cover" src="" />
-		</div>
-
-	</div>
-
-	<div data-role="footer" data-position="fixed">
-
-		<div data-role="navbar">
-			<ul>
-				<li><a id="pause" href="#">Pause</a></li>
-				<li><a id="stop" data-direction="reverse" href="/" data-transition="slide">Stop</a></li>
-			</ul>
-		</div>
-
-		<div data-role="fieldcontain" style="text-align: center">
-			<input type="range" style="display:none; width: 100%" name="volume" id="volume" value="60" min="0" max="100" data-highlight="true"/>
-		</div>
-	</div>
-
-</div>
 
 {% end %}

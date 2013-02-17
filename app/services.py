@@ -12,7 +12,7 @@ class Services(object):
         self.network = pylast.LastFMNetwork(api_key = self.key, api_secret = self.secret)
         self.network.enable_caching(file_path=config.CONFIG_DIR+'/lastfmcache')
 
-    def get_track_info(self, artist, title):
+    def get_cover(self, artist, title):
         """ Get some info about the specified track """
 
         try:
@@ -22,4 +22,4 @@ class Services(object):
 
         print('Cover: ' + cover)
 
-        return { 'cover' : cover }
+        return cover

@@ -16,6 +16,8 @@ class Handler(object):
             'setVol'    : SetVolumeHandler,
             'pause'     : PauseHandler,
             'getHistory': GetHistoryHandler,
+            'getFavorites' : GetFavoritesHandler,
+            'setFavorite' : SetFavoriteHandler,
         }
         self.router = JsonRpcRouter(application, self.methods, '/socket')
 
@@ -97,6 +99,24 @@ class GetHistoryHandler(JsonRpcHandler):
 
         self.respond(res)
         
+
+class GetFavoritesHandler(JsonRpcHandler):
+    def on_execute(self, params):
+        data = self.application.db.get_listening_history()
+        res = []
+        for i in data:
+            res.append({ 'artist' : i[0], 'title' : i[1], 'station' : i[2], 'cover' : i[3] })
+
+        self.respond(res)
+
+
+class SetFavoriteHandler(JsonRpcHandler):
+    def on_execute(self, params):
+        track = params[0]
+        value = params[1]
+
+        #todo: complete this
+
 
 class IndexHandler(tornado.web.RequestHandler):
 

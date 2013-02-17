@@ -21,20 +21,20 @@ class DB(object):
         with self._conn as c:
             cur = c.cursor()
 
-            cur.execute("""INSERT OR IGNORE INTO songs (artist, title, cover)
+            cur.execute(u"""INSERT OR IGNORE INTO songs (artist, title, cover)
                             VALUES (?, ?, ?)""", (artist, title, cover))
 
-            cur.execute("INSERT OR IGNORE INTO stations (name) VALUES (?)", (station,))
+            cur.execute(u"INSERT OR IGNORE INTO stations (name) VALUES (?)", (station,))
 
-            cur.execute("SELECT id from songs WHERE artist = ? AND title = ?", (artist, title))
+            cur.execute(u"SELECT id from songs WHERE artist = ? AND title = ?", (artist, title))
             song_id = cur.fetchone()[0]
 
-            cur.execute("SELECT id from stations WHERE name = ?", (station,))
+            cur.execute(u"SELECT id from stations WHERE name = ?", (station,))
             station_id = cur.fetchone()[0]
 
             timestamp = int(time.time())
 
-            cur.execute("""INSERT INTO song_history
+            cur.execute(u"""INSERT INTO song_history
                             (song_id, station_id, timestamp)
                             VALUES (?, ?, ?)""",
                             (song_id, station_id, timestamp))
@@ -43,15 +43,15 @@ class DB(object):
     def add_played_station(self, name, url):
         with self._conn as c:
             cur = c.cursor()
-            cur.execute("INSERT OR IGNORE INTO stations (name, url) VALUES (?, ?)",
+            cur.execute(u"INSERT OR IGNORE INTO stations (name, url) VALUES (?, ?)",
                 (name, url))
 
-            cur.execute("SELECT id from stations WHERE name = ?", (name,))
+            cur.execute(u"SELECT id from stations WHERE name = ?", (name,))
             station_id = cur.fetchone()[0]
 
             timestamp = int(time.time())
 
-            cur.execute("""INSERT INTO station_history 
+            cur.execute(u"""INSERT INTO station_history 
                             (station_id, timestamp)
                             VALUES (?, ?)""",
                             (station_id, timestamp))
@@ -59,7 +59,7 @@ class DB(object):
     def get_last_played_song(self):
         with self._conn as c:
             cur = c.cursor()
-            cur.execute("""SELECT artist, title from view_song_history
+            cur.execute(u"""SELECT artist, title from view_song_history
                     ORDER BY timestamp DESC LIMIT 1""")
 
             res = cur.fetchone()
@@ -70,14 +70,14 @@ class DB(object):
 
     def set_favorite_song(self, artist, title, favorite):
         with self._conn as c:
-            c.execute("""UPDATE songs SET favorite = ?
+            c.execute(u"""UPDATE songs SET favorite = ?
                          WHERE artist = ? AND title  = ?""",
                            (1 if favorite else 0, artist, title)) 
 
     def get_listening_history(self, limit=100):
         with self._conn as c:
             cur = c.cursor()
-            cur.execute("""SELECT artist, title, station, cover
+            cur.execute(u"""SELECT artist, title, station, cover
                          FROM view_song_history
                          ORDER BY timestamp DESC
                          LIMIT ?""", (limit,) )
@@ -88,7 +88,7 @@ class DB(object):
     def is_favorite_song(self, artist, title):
         with self._conn as c:
             cur = c.cursor()
-            cur.execute("""SELECT favorite FROM songs
+            cur.execute(u"""SELECT favorite FROM songs
                          WHERE artist = ? AND title  = ?""",
                             (artist, title))
 

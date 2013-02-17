@@ -1,7 +1,6 @@
 (function() {
 
     var Util = {
-        
         THEME_CLASSES : 'ui-btn-up-a ui-btn-up-b ui-btn-up-c ui-btn-up-d ui-btn-up-e ui-btn-hover-a ui-btn-hover-b ui-btn-hover-c ui-btn-hover-d ui-btn-hover-e',
 
         updateTheme : function(s, t) {
@@ -74,7 +73,7 @@
     })();
 
 
-    // Application state and functions
+    // Application controller
     var App = (function() {
 
         function App() {
@@ -137,6 +136,16 @@
             }, this));
         }
 
+        App.prototype.getFavorites = function() {
+            this.socket.send('getFavorites', [], $.proxy(function(result, error) {
+                $(this).trigger('handlefavorites', [result]);
+            }, this));
+        }
+
+        App.prototype.setFavorite = function(track, value) {
+            this.socket.send('setFavorite', [track, value]);
+        }
+
         App.prototype.setVolume = function(percent) {
             //if (percent != this.status.player.volume)
             this.socket.send('setVol', [percent]);
@@ -152,137 +161,116 @@
 
 
 
-    var IndexView = (function() {
+    var MenuController = (function() {
 
-        function IndexView(selector, app) {
-            this.loaded = false;
-            this.app = app;
+        function MenuController(app, selector) {
 
-            this.t_stationList   = '#stationlist';
-            this.t_historyList   = '#historylist';
-            this.t_playingStream = '#nowplaying-button';
-            this.selectedStream  = -1;
-
-            $(app)
-                .on('handlestatus', $.proxy(this.refresh, this))
-                .on('handlehistory', $.proxy(this.refreshHistory, this));
-
-            $(document)
-                .on('pageinit',selector, $.proxy(this.init, this))
-                .on('pagebeforeshow', selector, $.proxy(function() {
-                    this.refresh('', this.app.status);
-                }, this));
-
-            this.registerMenuEvents();
-
-        }
-
-        IndexView.prototype.registerMenuEvents = function() {
-
-            var menuStatus;
-
-            $("#page-index #menu-button").live("click", function(){
-                if(menuStatus != true){
-                $(".ui-page-active").animate({
-                    marginLeft: "165px",
-                  }, 300, function(){menuStatus = true});
-                  return false;
-                  } else {
-                    $(".ui-page-active").animate({
-                    marginLeft: "0px",
-                  }, 300, function(){menuStatus = false});
-                    return false;
-                  }
-            });
-
-             $('#page-index').live("swipeleft", function(){
-                if (menuStatus){
-                $(".ui-page-active").animate({
-                    marginLeft: "0px",
-                  }, 300, function(){menuStatus = false});
-                  }
-            });
-         
-            $('#page-index').live("swiperight", function(){
-                if (!menuStatus){
-                $(".ui-page-active").animate({
-                    marginLeft: "165px",
-                  }, 300, function(){menuStatus = true});
-                  }
-            });
-
-            $("#menu li a").live("click", function(){
-                $("#menu li").removeClass('active');
-                $(this).parent().addClass('active');
-            });
-
-
-
-            $("#menu #menu-stations").live("click", function() {
-                hideMenu();
-                $("#page-index #subpage-stations").attr("hidden", false);
-            });
-
-            $("#menu #menu-history").live("click", $.proxy(function() {
-               hideMenu();
-               $("#page-index #subpage-history").attr("hidden", false);
-               this.app.getHistory();
-            }, this));
-
-            $("#menu #menu-settings").live("click", function() {
-               hideMenu();
-               $("#page-index #subpage-settings").attr("hidden", false);
-            });
-
-            function hideMenu() {
-                $("#page-index .subpage").attr("hidden", true); 
-                menuStatus = false;
-                $(".ui-page-active").animate({ marginLeft: "0px",
-                  }, 300, function(){menuStatus = false});
-            }
-
-        }
-
-        IndexView.prototype.init = function() {
-            this.loaded = true;
+            var menuStatus = false;
             var _this = this;
 
-            $(this.t_stationList).on('click', 'li', function() {
-                _this.app.play($(this).attr('id'));
-                $.mobile.changePage( "#nowplaying", { transition: "slide"} );
+            var hideMenu = function() {
+                $(".ui-page-active").animate({ marginLeft: "0px" }, 300, function() { menuStatus = false; });
+            }
+
+            var showMenu = function() {
+                $(".ui-page-active").animate({ marginLeft: "165px" }, 300, function() { menuStatus = true; });
+            }
+
+            var toggleMenu = function() {
+                if (!menuStatus) showMenu()
+                else hideMenu();
+            }
+
+            // Toggle menu
+            $("#page-index #menu-button").on("click", function() { toggleMenu(); });
+            $(document).on("swipeleft",  function() { if (menuStatus) hideMenu(); });
+            $(document).on("swiperight", function() { if (!menuStatus) showMenu(); });
+
+            // Menu links
+            $("#menu li a").on("click", function() { 
+                window.location = $(this).attr('href')
+                _this.selectMenu(this); 
+                hideMenu();
             });
-        };
 
-        IndexView.prototype.refresh = function(event, status) {
+            // Change page on location hash change
+            $(window).on('hashchange', function() {
+                _this.changePage(window.location.hash.substring(1));
+            });
 
-            if (!this.loaded) return;
+            // Hide now playing link if playing stream is inactive
+            $(app).on('handlestatus', function(events, status) {
+                if (!Util.isNull(status.playing)) {
+                    $('#menu a[href="#nowplaying"]').parent().attr('hidden', !status.playing)
+                }
+            });
+
+        }
+
+        MenuController.prototype.changePage = function(anchor) {
+
+            $('div[data-role="subpage"]').each(function() {
+                var t = $(this);
+                if (!t.attr('hidden')) {
+                    t.attr('hidden', true);     
+                    t.trigger('hide');
+                }
+            });
+
+            $('div[data-role="subpage"][id="' + anchor + '"]')
+                .attr('hidden', false)
+                .trigger('show');
+
+            if (window.location.hash != '#' + anchor) {
+                window.location.hash = '#' + anchor;
+            }
+
+            this.selectMenu('#menu li a[href="#' + anchor + '"]');
+
+        }
+
+        MenuController.prototype.selectMenu = function(selector) {
+            $("#menu li").removeClass('active');
+            $(selector).parent().addClass('active');
+        }
+
+        return MenuController;
+
+    })();
+
+
+
+    var StationsController = (function() {
+
+        function StationsController(app, menu, selector) {
+            this.app = app;
+            this.menu = menu;
+            this.selector = selector;
+
+            this.selectedStream  = -1;
+
+            this.stationList = $('#stationlist');
+
+            $(app).on('handlestatus', $.proxy(this.refresh, this))
+
+            this.stationList.on('click', 'li', function() {
+                app.play($(this).attr('id'));
+                menu.changePage('nowplaying');
+            });
+        } 
+
+        StationsController.prototype.refresh = function(event, status) {
 
             if (!Util.isNull(status.stations)) {
                 this.refreshStations(status.stations);
-            }
-            if (!Util.isNull(status.stream)) {
-                this.refreshPlaying(status.stream);
             }
             if (!Util.isNull(status.playid)) {
                 this.refreshSelectedStream(status.playid);
             }
 
-        };
-
-        IndexView.prototype.refreshHistory = function(event, data) {
-            var items = [];
-
-            $.each(data, $.proxy(function(key, val) {
-                if (val.artist != ''  && val.title != '') {
-                    items.push('<li><img src="' + val.cover + '" /><h3>' + val.title + '</h3><p>' + val.artist + '</p></li>');
-                }
-            }, this));
-
-            $(this.t_historyList).html(items.join(''))
-            $(this.t_historyList).listview('refresh');
         }
 
-        IndexView.prototype.refreshStations = function(stations) {
+        StationsController.prototype.refreshStations = function(stations) {
 
             var items = [];
 
@@ -290,67 +278,83 @@
                 items.push('<li id="' + val.id + '"><a href="#">' + val.name + '</a></li>');
             });
 
-            $(this.t_stationList).html(items.join(''))
+            this.stationList.html(items.join(''))
 
             if (this.app.status.playid >= 0) {
-                Util.updateTheme($(this.t_stationList + ' > li#' + this.app.status.playid), 'b');
+                Util.updateTheme($('#stationlist > li#' + this.app.status.playid), 'b');
             }
 
-            $(this.t_stationList).listview('refresh');
+            this.stationList.listview('refresh');
 
         };
 
-        IndexView.prototype.refreshPlaying = function(stream) {
-            if (stream.length > 0) $(this.t_playingStream).show();
-            else $(this.t_playingStream).hide();
-        };
-
-        IndexView.prototype.refreshSelectedStream = function(id) {
+        StationsController.prototype.refreshSelectedStream = function(id) {
             if (typeof id != 'number') return;
 
             if (this.selectedStream != id) {
 
                 if (this.selectedStream != -1) {
-                    Util.updateTheme($(this.t_stationList + ' > li#' + this.selectedStream), 'c');
+                    Util.updateTheme($('#stationlist > li#' + this.selectedStream), 'c');
                 }
 
                 if (id != -1) {
-                    Util.updateTheme($(this.t_stationList + ' > li#' + id), 'b');
+                    Util.updateTheme($('#stationlist > li#' + id), 'b');
                 }
              
                 this.selectedStream = id;   
             }
         };
 
-        return IndexView;
+        return StationsController;
 
     })();
 
 
 
-    var NowPlayingView = (function() {
+    var HistoryController = (function() {
 
-        function NowPlayingView(selector, app) {
-            this.loaded = false;
+        function HistoryController(app, menu, selector) {
             this.app = app;
+            this.menu = menu;
+            this.selector = selector;
 
-            $(app).on('handlestatus', $.proxy(function(event, status) {
-                if (!this.app.status.playing) $.mobile.changePage('/', { transition: "none"} );
-                this.refresh(event, status);
-            }, this));
+            this.historylist = $('#historylist');
 
+            $(app).on('handlehistory', $.proxy(this.refresh, this));
 
-            $(document)
-                .on('pageinit', selector, $.proxy(this.init, this))
-                .on('pagebeforeshow', selector, $.proxy(function() {
-                    this.refresh('', this.app.status);
-                }, this));
-
+            $(selector).on('show', function() {
+                app.getHistory();
+            });
         }
 
-        NowPlayingView.prototype.init = function() {
+        HistoryController.prototype.refresh = function(event, data) {
+            var items = new Array();
 
-            this.loaded = true;
+            $.each(data, $.proxy(function(key, val) {
+                if (val.artist != ''  && val.title != '') {
+                    items.push('<li><img src="' + val.cover + '" /><h3>' + val.title + '</h3><p>' + val.artist + '</p></li>');
+                }
+            }, this));
+
+            this.historylist.html(items.join(''))
+            this.historylist.listview('refresh');
+        }
+
+        return HistoryController;
+
+    })();
+
+
+
+    var NowPlayingController = (function() {
+
+        function NowPlayingController(app, menu, selector) {
+            this.app = app;
+            this.menu = menu;
+            this.selector = selector;
+
+            $(app).on('handlestatus', $.proxy(this.refresh, this));
+
 
             var _this = this;
             this.volumeControl = $('#volume');
@@ -360,17 +364,18 @@
             this.stream = $('#stream');
             this.connection = $('#status');
             this.coverart = $('#cover');
+            this.favorite = $('#button-favsong');
 
             volumeControl = this.volumeControl;
-            this.currentVol = volumeControl.attr('value')
+            currentVol = volumeControl.attr('value')
 
-            this.volumeControl.on('change', $.proxy(function(event){
+            this.volumeControl.on('change', function(event){
                 var value = volumeControl.attr('value')
-                if (volumeControl._dragged && this.currentVol != value) {
+                if (volumeControl._dragged && currentVol != value) {
                     app.setVolume(value);
-                    this.currentVol = value;
+                    currentVol = value;
                 }
-            }, this));
+            });
 
             this.volumeControl.on('slidestart', function(event) {
                 volumeControl._dragged = true;
@@ -380,7 +385,6 @@
                 volumeControl._dragged = false;
             });
 
-
             this.pauseControl.on('click', function(event){
                 _this.app.pause();
             }); 
@@ -389,21 +393,33 @@
                 _this.app.stop();
             });
 
+            this.favorite.on('click', function() {
+                _this.toggleFavorite();
+            });
+
+
         }
 
-        NowPlayingView.prototype.refresh = function(event, status) {
+        NowPlayingController.prototype.refresh = function(event, status) {
 
-            if (!this.loaded) return;
+            if (!this.app.status.playing && !$(this.selector).attr('hidden')) {
+                this.menu.changePage('stations');
+                return;
+            }
 
+            // Stream
             if (!Util.isNull(status.stream)) {
                 this.station.html(status.stream);
             }
+
+            // Player
             if (!Util.isNull(status.player)) {
                 this.connection.html(status.player.connection);
                 this.stream.html(status.player.stream);
 
             }
 
+            // Volume
             if (!Util.isNull(status.volume)) {
                 if (!this.volumeControl._dragged) {
                     this.volumeControl.attr('value', status.volume).slider('refresh');
@@ -422,20 +438,46 @@
 
         }
 
-        return NowPlayingView;
+
+        NowPlayingController.prototype.toggleFavorite = function() {
+            if (this.favorite.checked) {
+                Util.updateTheme(this.favorite, 'c');
+                this.favorite.checked = false;
+            }
+            else {
+                Util.updateTheme(this.favorite, 'b');
+                this.favorite.checked = true;
+            }
+        }
+
+        return NowPlayingController;
 
     })();
 
-    var app = new App();
-    var indexView = new IndexView('#page-index', app);
-    var nowPlayingView = new NowPlayingView('#nowplaying', app);
 
 
     // Bind document events
     $(document).on('ready', function(event) {
-        app.connect();
+
+        var app = new App();
+        var menu = new MenuController(app, '#menu');
+
+        new StationsController(app, menu, '#stations');
+        new NowPlayingController(app, menu, '#nowplaying');
+        new HistoryController(app, menu, '#history');
+
+
+        $('div[data-role="subpage"]').each(function(i) {
+            if (i > 0) $(this).attr('hidden', true);
+        });
+        
+
         $(app.socket).on('connected', function(event) {
             app.fetchStatus();
+
+            if (window.location.hash) {
+                menu.changePage(window.location.hash.substring(1));
+            }
         });
 
         $(app).on('handlestatus', function(event, status) {
@@ -448,6 +490,9 @@
                 }
             }
         });
+
+        app.connect();
+
     });
 
 })();
