@@ -391,6 +391,7 @@
 
             this.stopControl.click(function() {
                 _this.app.stop();
+                menu.changePage('stations');
             });
 
             this.favorite.on('click', function() {

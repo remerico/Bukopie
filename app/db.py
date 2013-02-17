@@ -8,6 +8,8 @@ class DB(object):
         self._conn = sqlite3.connect(file)
         self.init_database(file)
 
+    def to_unicode(self, str):
+        return unicode(str, 'utf-8')
 
     def add_played_song(self, artist, title, station='', cover=''):
 
@@ -17,6 +19,11 @@ class DB(object):
         p_artist, p_title = self.get_last_played_song()
         if p_artist == artist and p_title == title:
             return
+
+        artist = self.to_unicode(artist)
+        title = self.to_unicode(title)
+        station = self.to_unicode(station)
+        cover = self.to_unicode(cover)
 
         with self._conn as c:
             cur = c.cursor()
@@ -41,6 +48,10 @@ class DB(object):
 
 
     def add_played_station(self, name, url):
+
+        name = self.to_unicode(name)
+        url = self.to_unicode(url)
+
         with self._conn as c:
             cur = c.cursor()
             cur.execute(u"INSERT OR IGNORE INTO stations (name, url) VALUES (?, ?)",
@@ -69,6 +80,10 @@ class DB(object):
 
 
     def set_favorite_song(self, artist, title, favorite):
+        
+        artist = self.to_unicode(artist)
+        title = self.to_unicode(title)
+
         with self._conn as c:
             c.execute(u"""UPDATE songs SET favorite = ?
                          WHERE artist = ? AND title  = ?""",
@@ -86,6 +101,10 @@ class DB(object):
 
 
     def is_favorite_song(self, artist, title):
+
+        artist = self.to_unicode(artist)
+        title = self.to_unicode(title)
+
         with self._conn as c:
             cur = c.cursor()
             cur.execute(u"""SELECT favorite FROM songs
