@@ -1,6 +1,6 @@
 body.ui-overlay-c {
     -webkit-text-size-adjust: none;
-    background: #5a5959 url(static/images/menuBg.gif) top left repeat-y;
+    background: #5a5959 url(images/menuBg.gif) top left repeat-y;
 }
 .pages h3 {
     margin: 0;
